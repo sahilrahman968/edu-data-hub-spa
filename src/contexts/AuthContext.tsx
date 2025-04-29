@@ -37,13 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  // Redirection effect when authentication state changes
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      navigate('/boards');
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
@@ -53,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('token', response.token);
         setIsAuthenticated(true);
         toast.success('Successfully logged in');
+        navigate('/boards');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -67,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.signup(id, name, email, password);
       toast.success(response.msg || 'Signup successful. Please log in.');
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup error:', error);
       throw error;
     } finally {
