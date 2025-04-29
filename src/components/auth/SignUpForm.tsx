@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
+  id: z.string().min(3, { message: "ID must be at least 3 characters" }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -35,6 +36,8 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: "",
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -44,8 +47,10 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await signup(data.email, data.password);
-      onToggleForm();
+      await signup(data.id, data.name, data.email, data.password);
+      // Don't automatically toggle to login form - let the user see success message first
+    } catch (error) {
+      // Error handling is done in the AuthContext
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +67,32 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ID</FormLabel>
+                  <FormControl>
+                    <Input placeholder="teacher123" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"

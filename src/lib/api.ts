@@ -16,14 +16,14 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   return response.json();
 };
 
-export const signup = async (email: string, password: string): Promise<ApiResponse> => {
+export const signup = async (id: string, name: string, email: string, password: string): Promise<ApiResponse> => {
   try {
     const response = await fetch(`${BASE_URL}/api/teachers/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ id, name, email, password }),
     });
     return handleResponse<ApiResponse>(response);
   } catch (error: any) {
@@ -48,7 +48,6 @@ export const login = async (email: string, password: string): Promise<ApiRespons
   }
 };
 
-// Function to get authorization headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -57,7 +56,6 @@ const getAuthHeaders = () => {
   };
 };
 
-// Board API
 export const getBoards = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/boards`, {
@@ -84,7 +82,6 @@ export const createBoard = async (id: string, name: string): Promise<ApiResponse
   }
 };
 
-// Class API
 export const getClasses = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/classes`, {
@@ -111,7 +108,6 @@ export const createClass = async (id: string, name: string, boardId: string): Pr
   }
 };
 
-// Subject API
 export const getSubjects = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/subjects`, {
@@ -138,7 +134,6 @@ export const createSubject = async (id: string, name: string, classId: string): 
   }
 };
 
-// Chapter API
 export const getChapters = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/chapters`, {
@@ -165,7 +160,6 @@ export const createChapter = async (id: string, name: string, subjectId: string)
   }
 };
 
-// Topic API
 export const getTopics = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/topics`, {

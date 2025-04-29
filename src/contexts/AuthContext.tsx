@@ -7,7 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (id: string, name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -52,13 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (id: string, name: string, email: string, password: string) => {
     try {
       setIsLoading(true);
-      await api.signup(email, password);
-      toast.success('Signup successful. Please log in.');
-    } catch (error) {
+      const response = await api.signup(id, name, email, password);
+      toast.success(response.msg || 'Signup successful. Please log in.');
+      // Don't automatically redirect to login - let the user see success message first
+      return response;
+    } catch (error: any) {
       console.error('Signup error:', error);
+      // Error notification is shown from the API module
+      throw error; // Re-throw to allow form handling
     } finally {
       setIsLoading(false);
     }
