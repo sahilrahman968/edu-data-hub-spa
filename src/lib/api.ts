@@ -71,7 +71,7 @@ export const getBoards = async (): Promise<any[]> => {
 
 export const createBoard = async (id: string, name: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/board/create`, {
+    const response = await fetch(`${BASE_URL}/api/boards/create`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ id, name }),
@@ -97,7 +97,7 @@ export const getClasses = async (): Promise<any[]> => {
 
 export const createClass = async (id: string, name: string, boardId: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/class/create`, {
+    const response = await fetch(`${BASE_URL}/api/classes/create`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ id, name, boardId }),
@@ -123,7 +123,7 @@ export const getSubjects = async (): Promise<any[]> => {
 
 export const createSubject = async (id: string, name: string, classId: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/subject/create`, {
+    const response = await fetch(`${BASE_URL}/api/subjects/create`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ id, name, classId }),
@@ -149,7 +149,7 @@ export const getChapters = async (): Promise<any[]> => {
 
 export const createChapter = async (id: string, name: string, subjectId: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/chapter/create`, {
+    const response = await fetch(`${BASE_URL}/api/chapters/create`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ id, name, subjectId }),
@@ -175,7 +175,7 @@ export const getTopics = async (): Promise<any[]> => {
 
 export const createTopic = async (id: string, name: string, chapterId: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/topic/create`, {
+    const response = await fetch(`${BASE_URL}/api/topics/create`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ id, name, chapterId }),
