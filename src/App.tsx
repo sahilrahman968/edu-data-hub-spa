@@ -40,11 +40,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-right" />
-        <BrowserRouter>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner position="top-right" />
+      <BrowserRouter>
+        <AuthProvider>
           <Routes>
             {/* Public route */}
             <Route path="/auth" element={<AuthPage />} />
@@ -66,9 +66,9 @@ const App = () => (
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 
