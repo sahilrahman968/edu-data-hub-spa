@@ -1,8 +1,9 @@
+
 import { toast } from "@/components/ui/sonner";
 
 const BASE_URL = "http://localhost:3001";
 
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   msg?: string;
   token?: string;
   [key: string]: any;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/sonner';
 import * as api from '@/lib/api';
@@ -7,7 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (id: string, name: string, email: string, password: string) => Promise<void>;
+  signup: (id: string, name: string, email: string, password: string) => Promise<api.ApiResponse | void>;
   logout: () => void;
 }
 
@@ -57,12 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const response = await api.signup(id, name, email, password);
       toast.success(response.msg || 'Signup successful. Please log in.');
-      // Don't automatically redirect to login - let the user see success message first
       return response;
     } catch (error: any) {
       console.error('Signup error:', error);
-      // Error notification is shown from the API module
-      throw error; // Re-throw to allow form handling
+      throw error;
     } finally {
       setIsLoading(false);
     }
