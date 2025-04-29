@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 
 const BASE_URL = "http://localhost:3001";
@@ -19,7 +18,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 
 export const signup = async (email: string, password: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/auth/signup`, {
+    const response = await fetch(`${BASE_URL}/api/teachers/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +34,7 @@ export const signup = async (email: string, password: string): Promise<ApiRespon
 
 export const login = async (email: string, password: string): Promise<ApiResponse> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${BASE_URL}/api/teachers/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
