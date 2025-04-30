@@ -186,3 +186,48 @@ export const createTopic = async (id: string, name: string, chapterId: string): 
     throw error;
   }
 };
+
+// New API functions for Questions
+export const getQuestions = async (params = {}): Promise<any[]> => {
+  try {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      queryParams.append(key, String(value));
+    });
+    
+    const url = `${BASE_URL}/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  } catch (error: any) {
+    toast.error(error.message);
+    throw error;
+  }
+};
+
+export const createQuestion = async (questionData: any): Promise<ApiResponse> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/questions/create`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(questionData),
+    });
+    return handleResponse<ApiResponse>(response);
+  } catch (error: any) {
+    toast.error(error.message);
+    throw error;
+  }
+};
+
+export const getQuestionById = async (id: string): Promise<any> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/questions/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  } catch (error: any) {
+    toast.error(error.message);
+    throw error;
+  }
+};
