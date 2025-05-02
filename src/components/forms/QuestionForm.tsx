@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -196,7 +195,7 @@ export function QuestionForm() {
   // Fetch topics based on selected chapters
   const { data: topics = [] } = useQuery({
     queryKey: ['topics', selectedChapters],
-    queryFn: () => api.getTopics(selectedChapters.split(",")),
+    queryFn: () => api.getTopics(selectedChapters[0]),
     enabled: selectedChapters.length > 0 && isAuthenticated,
   });
 
@@ -218,21 +217,6 @@ export function QuestionForm() {
     name: "evaluationRubric",
   });
 
-  const leftColumnArray = useFieldArray({
-    control: form.control,
-    name: "matchingDetails.leftColumn",
-  });
-
-  const rightColumnArray = useFieldArray({
-    control: form.control,
-    name: "matchingDetails.rightColumn",
-  });
-
-  const correctMatchesArray = useFieldArray({
-    control: form.control,
-    name: "matchingDetails.correctMatches",
-  });
-
   const chaptersArray = useFieldArray({
     control: form.control,
     name: "syllabusMapping.chapter",
@@ -242,6 +226,55 @@ export function QuestionForm() {
     control: form.control,
     name: "syllabusMapping.topic",
   });
+
+  const correctMatchesArray = useFieldArray({
+    control: form.control,
+    name: "matchingDetails.correctMatches",
+  });
+
+  // Define left and right column arrays as regular state instead of field arrays
+  const [leftColumnItems, setLeftColumnItems] = useState<string[]>(['']);
+  const [rightColumnItems, setRightColumnItems] = useState<string[]>(['']);
+
+  // Add left column item
+  const addLeftColumnItem = () => {
+    setLeftColumnItems([...leftColumnItems, '']);
+  };
+
+  // Add right column item
+  const addRightColumnItem = () => {
+    setRightColumnItems([...rightColumnItems, '']);
+  };
+
+  // Update left column item
+  const updateLeftColumnItem = (index: number, value: string) => {
+    const newItems = [...leftColumnItems];
+    newItems[index] = value;
+    setLeftColumnItems(newItems);
+    form.setValue('matchingDetails.leftColumn', newItems);
+  };
+
+  // Update right column item
+  const updateRightColumnItem = (index: number, value: string) => {
+    const newItems = [...rightColumnItems];
+    newItems[index] = value;
+    setRightColumnItems(newItems);
+    form.setValue('matchingDetails.rightColumn', newItems);
+  };
+
+  // Remove left column item
+  const removeLeftColumnItem = (index: number) => {
+    const newItems = leftColumnItems.filter((_, i) => i !== index);
+    setLeftColumnItems(newItems);
+    form.setValue('matchingDetails.leftColumn', newItems);
+  };
+
+  // Remove right column item
+  const removeRightColumnItem = (index: number) => {
+    const newItems = rightColumnItems.filter((_, i) => i !== index);
+    setRightColumnItems(newItems);
+    form.setValue('matchingDetails.rightColumn', newItems);
+  };
 
   // Handle board selection
   const handleBoardChange = (boardId: string) => {
@@ -349,8 +382,13 @@ export function QuestionForm() {
       questionPayload.evaluationRubric = data.evaluationRubric;
     } else if (data.questionType === "passage" && data.passageDetails) {
       questionPayload.passageDetails = data.passageDetails;
-    } else if (data.questionType === "matching" && data.matchingDetails) {
-      questionPayload.matchingDetails = data.matchingDetails;
+    } else if (data.questionType === "matching") {
+      // For matching questions, get the values from our state
+      questionPayload.matchingDetails = {
+        leftColumn: leftColumnItems.filter(item => item.trim() !== ''),
+        rightColumn: rightColumnItems.filter(item => item.trim() !== ''),
+        correctMatches: data.matchingDetails?.correctMatches || []
+      };
     }
 
     // Add child IDs if specified
@@ -790,32 +828,30 @@ export function QuestionForm() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => leftColumnArray.append("")}
+                      onClick={addLeftColumnItem}
                     >
                       <Plus className="h-4 w-4 mr-2" /> Add Item
                     </Button>
                   </div>
 
-                  {leftColumnArray.fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <FormField
-                        control={form.control}
-                        name={`matchingDetails.leftColumn.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input placeholder="Left column item" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  {leftColumnItems.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input 
+                            placeholder="Left column item" 
+                            value={item}
+                            onChange={(e) => updateLeftColumnItem(index, e.target.value)} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
 
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => leftColumnArray.remove(index)}
+                        onClick={() => removeLeftColumnItem(index)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -830,32 +866,30 @@ export function QuestionForm() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => rightColumnArray.append("")}
+                      onClick={addRightColumnItem}
                     >
                       <Plus className="h-4 w-4 mr-2" /> Add Item
                     </Button>
                   </div>
 
-                  {rightColumnArray.fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center space-x-2">
-                      <FormField
-                        control={form.control}
-                        name={`matchingDetails.rightColumn.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input placeholder="Right column item" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  {rightColumnItems.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input 
+                            placeholder="Right column item" 
+                            value={item}
+                            onChange={(e) => updateRightColumnItem(index, e.target.value)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
 
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => rightColumnArray.remove(index)}
+                        onClick={() => removeRightColumnItem(index)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -887,13 +921,13 @@ export function QuestionForm() {
                               <FormLabel>From</FormLabel>
                               <Select
                                 value={field.value}
-                                onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                                onValueChange={field.onChange}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select left item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {form.getValues('matchingDetails.leftColumn').map((item, idx) => (
+                                  {leftColumnItems.map((item, idx) => (
                                     item && (
                                       <SelectItem key={idx} value={item}>{item}</SelectItem>
                                     )
@@ -921,245 +955,4 @@ export function QuestionForm() {
                                   <SelectValue placeholder="Select right item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {form.getValues('matchingDetails.rightColumn').map((item, idx) => (
-                                    <SelectItem key={idx} value={item || ""}>
-                                      {item || ""}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="md:col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => correctMatchesArray.remove(index)}
-                          className="mt-6"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Syllabus Mapping */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Syllabus Mapping</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Board */}
-                <FormField
-                  control={form.control}
-                  name="syllabusMapping.board.id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Board*</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => handleBoardChange(value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select board" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {boards.map((board: any) => (
-                            <SelectItem key={board.id} value={board.id}>
-                              {board.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Class */}
-                <FormField
-                  control={form.control}
-                  name="syllabusMapping.class.id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Class*</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => handleClassChange(value)}
-                        disabled={!selectedBoardId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {classes.map((cls: any) => (
-                            <SelectItem key={cls.id} value={cls.id}>
-                              {cls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Subject */}
-                <FormField
-                  control={form.control}
-                  name="syllabusMapping.subject.id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subject*</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => handleSubjectChange(value)}
-                        disabled={!selectedClassId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subjects.map((subject: any) => (
-                            <SelectItem key={subject.id} value={subject.id}>
-                              {subject.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Chapters */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Chapters*</h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => chaptersArray.append({ id: "", name: "" })}
-                    disabled={!selectedSubjectId}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add Chapter
-                  </Button>
-                </div>
-
-                {chaptersArray.fields.map((field, index) => (
-                  <div key={field.id} className="flex items-center space-x-2">
-                    <FormField
-                      control={form.control}
-                      name={`syllabusMapping.chapter.${index}.id`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => handleChapterChange(index, value)}
-                            disabled={!selectedSubjectId}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select chapter" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {chapters.map((chapter: any) => (
-                                <SelectItem key={chapter.id} value={chapter.id}>
-                                  {chapter.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {index > 0 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => chaptersArray.remove(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Topics (optional) */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Topics (Optional)</h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => topicsArray.append({ id: "", name: "" })}
-                    disabled={selectedChapters.length === 0}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add Topic
-                  </Button>
-                </div>
-
-                {topicsArray.fields.map((field, index) => (
-                  <div key={field.id} className="flex items-center space-x-2">
-                    <FormField
-                      control={form.control}
-                      name={`syllabusMapping.topic.${index}.id`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => handleTopicChange(index, value)}
-                            disabled={selectedChapters.length === 0}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select topic" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {topics.map((topic: any) => (
-                                <SelectItem key={topic.id} value={topic.id}>
-                                  {topic.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => topicsArray.remove(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Question"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
-  );
-}
-
-export default QuestionForm;
+                                  {rightColumnItems.map((item

@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 
 const BASE_URL = "http://localhost:3001";
@@ -161,7 +160,7 @@ export const createChapter = async (id: string, name: string, subjectId: string)
   }
 };
 
-export const getTopics = async (chapterId): Promise<any[]> => {
+export const getTopics = async (chapterId: string): Promise<any[]> => {
   try {
     const response = await fetch(`${BASE_URL}/api/topics?chapterId=${chapterId}`, {
       headers: getAuthHeaders(),

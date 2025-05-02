@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu, BookOpen, Layers, Folder, FileText, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, BookOpen, Layers, Folder, FileText, LogOut, ChevronLeft, ChevronRight, BookText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -44,6 +44,7 @@ const Sidebar = () => {
     { icon: <Folder size={18} />, label: "Subjects", path: "/subjects" },
     { icon: <FileText size={18} />, label: "Chapters", path: "/chapters" },
     { icon: <Menu size={18} />, label: "Topics", path: "/topics" },
+    { icon: <BookText size={18} />, label: "Questions", path: "/questions" },
   ];
 
   const handleNavigation = (path: string) => {
