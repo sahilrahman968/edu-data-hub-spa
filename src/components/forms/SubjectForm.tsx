@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +24,9 @@ import * as api from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+// This is where the TypeScript error was occurring. Let's add a type definition for board.
+type Class = { id: string; name: string };
+
 const formSchema = z.object({
   id: z.string().min(1, { message: "ID is required" }),
   name: z.string().min(1, { message: "Name is required" }),
@@ -50,6 +52,17 @@ export function SubjectForm() {
       classId: "",
     },
   });
+
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [className, setClassName] = useState("");
+
+  const handleClassChange = (classId: string) => {
+    const selectedClass = classes.find((cls: Class) => cls.id === classId);
+    if (selectedClass) {
+      setSelectedClassId(classId);
+      setClassName(selectedClass.name);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
