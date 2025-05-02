@@ -100,7 +100,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function QuestionForm() {
+export default function QuestionForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -202,7 +202,7 @@ export function QuestionForm() {
   // Fetch available non-parent questions for childIds
   const { data: availableQuestions = [] } = useQuery({
     queryKey: ['questions', 'non-parents'],
-    queryFn: () => api.getQuestions(), // This function needs to be added to api.ts
+    queryFn: () => api.getQuestions(),
     enabled: isAuthenticated,
   });
 
@@ -464,7 +464,6 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-
 
                 {/* Has Child */}
                 <FormField
@@ -955,4 +954,5 @@ export function QuestionForm() {
                                   <SelectValue placeholder="Select right item" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {rightColumnItems.map((item
+                                  {rightColumnItems.map((item, idx) => (
+                                    item &&
