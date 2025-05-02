@@ -164,7 +164,7 @@ export function QuestionForm() {
   });
 
   const watchQuestionType = form.watch("questionType");
-  
+
   // Fetch boards
   const { data: boards = [] } = useQuery({
     queryKey: ['boards'],
@@ -175,28 +175,28 @@ export function QuestionForm() {
   // Fetch classes based on selected board
   const { data: classes = [] } = useQuery({
     queryKey: ['classes', selectedBoardId],
-    queryFn: () => api.getClasses(),
+    queryFn: () => api.getClasses(selectedBoardId),
     enabled: !!selectedBoardId && isAuthenticated,
   });
 
   // Fetch subjects based on selected class
   const { data: subjects = [] } = useQuery({
     queryKey: ['subjects', selectedClassId],
-    queryFn: () => api.getSubjects(),
+    queryFn: () => api.getSubjects(selectedClassId),
     enabled: !!selectedClassId && isAuthenticated,
   });
 
   // Fetch chapters based on selected subject
   const { data: chapters = [] } = useQuery({
     queryKey: ['chapters', selectedSubjectId],
-    queryFn: () => api.getChapters(),
+    queryFn: () => api.getChapters(selectedSubjectId),
     enabled: !!selectedSubjectId && isAuthenticated,
   });
 
   // Fetch topics based on selected chapters
   const { data: topics = [] } = useQuery({
     queryKey: ['topics', selectedChapters],
-    queryFn: () => api.getTopics(),
+    queryFn: () => api.getTopics(selectedChapters.split(",")),
     enabled: selectedChapters.length > 0 && isAuthenticated,
   });
 
@@ -250,7 +250,7 @@ export function QuestionForm() {
       form.setValue("syllabusMapping.board.id", selectedBoard.id);
       form.setValue("syllabusMapping.board.name", selectedBoard.name);
       setSelectedBoardId(boardId);
-      
+
       // Reset dependent fields
       form.setValue("syllabusMapping.class", { id: "", name: "" });
       form.setValue("syllabusMapping.subject", { id: "", name: "" });
@@ -269,7 +269,7 @@ export function QuestionForm() {
       form.setValue("syllabusMapping.class.id", selectedClass.id);
       form.setValue("syllabusMapping.class.name", selectedClass.name);
       setSelectedClassId(classId);
-      
+
       // Reset dependent fields
       form.setValue("syllabusMapping.subject", { id: "", name: "" });
       form.setValue("syllabusMapping.chapter", [{ id: "", name: "" }]);
@@ -286,7 +286,7 @@ export function QuestionForm() {
       form.setValue("syllabusMapping.subject.id", selectedSubject.id);
       form.setValue("syllabusMapping.subject.name", selectedSubject.name);
       setSelectedSubjectId(subjectId);
-      
+
       // Reset dependent fields
       form.setValue("syllabusMapping.chapter", [{ id: "", name: "" }]);
       form.setValue("syllabusMapping.topic", [{ id: "", name: "" }]);
@@ -301,11 +301,11 @@ export function QuestionForm() {
       const updatedChapters = [...form.getValues("syllabusMapping.chapter")];
       updatedChapters[index] = { id: selectedChapter.id, name: selectedChapter.name };
       form.setValue("syllabusMapping.chapter", updatedChapters);
-      
+
       // Update selected chapters for topic filtering
       const chapterIds = updatedChapters.map(ch => ch.id).filter(id => id !== "");
       setSelectedChapters(chapterIds);
-      
+
       // Reset topics if all chapters are removed
       if (chapterIds.length === 0) {
         form.setValue("syllabusMapping.topic", [{ id: "", name: "" }]);
@@ -325,7 +325,7 @@ export function QuestionForm() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-    
+
     // Create question payload based on question type
     let questionPayload: any = {
       id: data.id,
@@ -341,7 +341,7 @@ export function QuestionForm() {
       createdBy: data.createdBy,
       syllabusMapping: data.syllabusMapping,
     };
-    
+
     // Add question type specific fields
     if (data.questionType === "option_based" && data.options) {
       questionPayload.options = data.options;
@@ -352,7 +352,7 @@ export function QuestionForm() {
     } else if (data.questionType === "matching" && data.matchingDetails) {
       questionPayload.matchingDetails = data.matchingDetails;
     }
-    
+
     // Add child IDs if specified
     if (data.childIds && data.childIds.length > 0) {
       questionPayload.childIds = data.childIds;
@@ -398,7 +398,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Parent Question ID */}
                 <FormField
                   control={form.control}
@@ -407,14 +407,14 @@ export function QuestionForm() {
                     <FormItem>
                       <FormLabel>Parent Question ID</FormLabel>
                       <Select
-                        value={field.value || ""}
-                        onValueChange={(value) => field.onChange(value || null)}
+                        value={field.value || "none"}
+                        onValueChange={(value) => field.onChange(value === "none" ? null : value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select parent question (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {availableQuestions.map((question: any) => (
                             <SelectItem key={question.id} value={question.id}>
                               {question.id} - {question.questionTitle?.substring(0, 30)}...
@@ -426,7 +426,8 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
+
                 {/* Has Child */}
                 <FormField
                   control={form.control}
@@ -448,7 +449,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Marks */}
                 <FormField
                   control={form.control}
@@ -463,7 +464,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Difficulty */}
                 <FormField
                   control={form.control}
@@ -488,7 +489,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Question Type */}
                 <FormField
                   control={form.control}
@@ -514,7 +515,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Source */}
                 <FormField
                   control={form.control}
@@ -539,7 +540,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Year (optional) */}
                 <FormField
                   control={form.control}
@@ -555,7 +556,7 @@ export function QuestionForm() {
                   )}
                 />
               </div>
-              
+
               {/* Question Title */}
               <FormField
                 control={form.control}
@@ -574,7 +575,7 @@ export function QuestionForm() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Markup Question Title (optional) */}
               <FormField
                 control={form.control}
@@ -594,7 +595,7 @@ export function QuestionForm() {
                 )}
               />
             </div>
-            
+
             {/* Question Type Specific Fields */}
             {watchQuestionType === "option_based" && (
               <div className="space-y-4">
@@ -609,7 +610,7 @@ export function QuestionForm() {
                     <Plus className="h-4 w-4 mr-2" /> Add Option
                   </Button>
                 </div>
-                
+
                 {optionsArray.fields.map((field, index) => (
                   <div key={field.id} className="flex items-start space-x-2">
                     <div className="flex-1 space-y-2">
@@ -629,7 +630,7 @@ export function QuestionForm() {
                             )}
                           />
                         </div>
-                        
+
                         <div className="md:col-span-3">
                           <FormField
                             control={form.control}
@@ -645,7 +646,7 @@ export function QuestionForm() {
                             )}
                           />
                         </div>
-                        
+
                         <div className="md:col-span-1">
                           <FormField
                             control={form.control}
@@ -666,7 +667,7 @@ export function QuestionForm() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <Button
                       type="button"
                       variant="ghost"
@@ -680,7 +681,7 @@ export function QuestionForm() {
                 ))}
               </div>
             )}
-            
+
             {watchQuestionType === "subjective" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -694,7 +695,7 @@ export function QuestionForm() {
                     <Plus className="h-4 w-4 mr-2" /> Add Criterion
                   </Button>
                 </div>
-                
+
                 {evaluationRubricArray.fields.map((field, index) => (
                   <div key={field.id} className="flex items-start space-x-2">
                     <div className="flex-1 space-y-2">
@@ -714,7 +715,7 @@ export function QuestionForm() {
                             )}
                           />
                         </div>
-                        
+
                         <div className="md:col-span-1">
                           <FormField
                             control={form.control}
@@ -732,7 +733,7 @@ export function QuestionForm() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <Button
                       type="button"
                       variant="ghost"
@@ -746,7 +747,7 @@ export function QuestionForm() {
                 ))}
               </div>
             )}
-            
+
             {watchQuestionType === "passage" && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Passage Details</h3>
@@ -763,7 +764,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="passageDetails.passageText"
@@ -779,7 +780,7 @@ export function QuestionForm() {
                 />
               </div>
             )}
-            
+
             {watchQuestionType === "matching" && (
               <div className="space-y-8">
                 <div className="space-y-4">
@@ -794,7 +795,7 @@ export function QuestionForm() {
                       <Plus className="h-4 w-4 mr-2" /> Add Item
                     </Button>
                   </div>
-                  
+
                   {leftColumnArray.fields.map((field, index) => (
                     <div key={field.id} className="flex items-center space-x-2">
                       <FormField
@@ -809,7 +810,7 @@ export function QuestionForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <Button
                         type="button"
                         variant="ghost"
@@ -821,7 +822,7 @@ export function QuestionForm() {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium">Right Column Items</h3>
@@ -834,7 +835,7 @@ export function QuestionForm() {
                       <Plus className="h-4 w-4 mr-2" /> Add Item
                     </Button>
                   </div>
-                  
+
                   {rightColumnArray.fields.map((field, index) => (
                     <div key={field.id} className="flex items-center space-x-2">
                       <FormField
@@ -849,7 +850,7 @@ export function QuestionForm() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <Button
                         type="button"
                         variant="ghost"
@@ -861,7 +862,7 @@ export function QuestionForm() {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium">Correct Matches</h3>
@@ -874,7 +875,7 @@ export function QuestionForm() {
                       <Plus className="h-4 w-4 mr-2" /> Add Match
                     </Button>
                   </div>
-                  
+
                   {correctMatchesArray.fields.map((field, index) => (
                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div className="md:col-span-2">
@@ -886,16 +887,16 @@ export function QuestionForm() {
                               <FormLabel>From</FormLabel>
                               <Select
                                 value={field.value}
-                                onValueChange={field.onChange}
+                                onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select left item" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {form.getValues('matchingDetails.leftColumn').map((item, idx) => (
-                                    <SelectItem key={idx} value={item || ""}>
-                                      {item || ""}
-                                    </SelectItem>
+                                    item && (
+                                      <SelectItem key={idx} value={item}>{item}</SelectItem>
+                                    )
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -904,7 +905,7 @@ export function QuestionForm() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="md:col-span-2">
                         <FormField
                           control={form.control}
@@ -932,7 +933,7 @@ export function QuestionForm() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="md:col-span-1">
                         <Button
                           type="button"
@@ -949,7 +950,7 @@ export function QuestionForm() {
                 </div>
               </div>
             )}
-            
+
             {/* Syllabus Mapping */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Syllabus Mapping</h3>
@@ -980,7 +981,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Class */}
                 <FormField
                   control={form.control}
@@ -1008,7 +1009,7 @@ export function QuestionForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 {/* Subject */}
                 <FormField
                   control={form.control}
@@ -1037,7 +1038,7 @@ export function QuestionForm() {
                   )}
                 />
               </div>
-              
+
               {/* Chapters */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -1052,7 +1053,7 @@ export function QuestionForm() {
                     <Plus className="h-4 w-4 mr-2" /> Add Chapter
                   </Button>
                 </div>
-                
+
                 {chaptersArray.fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-2">
                     <FormField
@@ -1080,7 +1081,7 @@ export function QuestionForm() {
                         </FormItem>
                       )}
                     />
-                    
+
                     {index > 0 && (
                       <Button
                         type="button"
@@ -1094,7 +1095,7 @@ export function QuestionForm() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Topics (optional) */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -1109,7 +1110,7 @@ export function QuestionForm() {
                     <Plus className="h-4 w-4 mr-2" /> Add Topic
                   </Button>
                 </div>
-                
+
                 {topicsArray.fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-2">
                     <FormField
@@ -1137,7 +1138,7 @@ export function QuestionForm() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button
                       type="button"
                       variant="ghost"
@@ -1150,7 +1151,7 @@ export function QuestionForm() {
                 ))}
               </div>
             </div>
-            
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating..." : "Create Question"}
             </Button>
