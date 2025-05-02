@@ -29,6 +29,37 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
 
+// Define interfaces for our data types
+interface Board {
+  id: string;
+  name: string;
+}
+
+interface Class {
+  id: string;
+  name: string;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+}
+
+interface Chapter {
+  id: string;
+  name: string;
+}
+
+interface Topic {
+  id: string;
+  name: string;
+}
+
+interface Question {
+  id: string;
+  questionTitle?: string;
+}
+
 const questionTypeSchema = z.enum(["option_based", "subjective", "passage", "matching"]);
 
 const optionSchema = z.object({
@@ -100,12 +131,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-type Board = { id: string; name: string };
-type Class = { id: string; name: string };
-type Subject = { id: string; name: string };
-type Chapter = { id: string; name: string };
-type Topic = { id: string; name: string };
-type Question = { id: string; questionTitle?: string };
 
 export default function QuestionForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -271,6 +296,7 @@ export default function QuestionForm() {
 
   // Remove left column item
   const removeLeftColumnItem = (index: number) => {
+    if (leftColumnItems.length <= 1) return;
     const newItems = leftColumnItems.filter((_, i) => i !== index);
     setLeftColumnItems(newItems);
     form.setValue('matchingDetails.leftColumn', newItems);
@@ -278,6 +304,7 @@ export default function QuestionForm() {
 
   // Remove right column item
   const removeRightColumnItem = (index: number) => {
+    if (rightColumnItems.length <= 1) return;
     const newItems = rightColumnItems.filter((_, i) => i !== index);
     setRightColumnItems(newItems);
     form.setValue('matchingDetails.rightColumn', newItems);
@@ -285,7 +312,8 @@ export default function QuestionForm() {
 
   // Handle board selection
   const handleBoardChange = (boardId: string) => {
-    const selectedBoard = boards.find((board: Board) => board.id === boardId);
+    // Add type assertion to specify that items in boards array conform to the Board interface
+    const selectedBoard = (boards as Board[]).find((board: Board) => board.id === boardId);
     if (selectedBoard) {
       form.setValue("syllabusMapping.board.id", selectedBoard.id);
       form.setValue("syllabusMapping.board.name", selectedBoard.name);
@@ -304,7 +332,7 @@ export default function QuestionForm() {
 
   // Handle class selection
   const handleClassChange = (classId: string) => {
-    const selectedClass = classes.find((cls: Class) => cls.id === classId);
+    const selectedClass = (classes as Class[]).find((cls: Class) => cls.id === classId);
     if (selectedClass) {
       form.setValue("syllabusMapping.class.id", selectedClass.id);
       form.setValue("syllabusMapping.class.name", selectedClass.name);
@@ -321,7 +349,7 @@ export default function QuestionForm() {
 
   // Handle subject selection
   const handleSubjectChange = (subjectId: string) => {
-    const selectedSubject = subjects.find((subject: Subject) => subject.id === subjectId);
+    const selectedSubject = (subjects as Subject[]).find((subject: Subject) => subject.id === subjectId);
     if (selectedSubject) {
       form.setValue("syllabusMapping.subject.id", selectedSubject.id);
       form.setValue("syllabusMapping.subject.name", selectedSubject.name);
@@ -336,7 +364,7 @@ export default function QuestionForm() {
 
   // Handle chapter selection
   const handleChapterChange = (index: number, chapterId: string) => {
-    const selectedChapter = chapters.find((chapter: Chapter) => chapter.id === chapterId);
+    const selectedChapter = (chapters as Chapter[]).find((chapter: Chapter) => chapter.id === chapterId);
     if (selectedChapter) {
       const updatedChapters = [...form.getValues("syllabusMapping.chapter")];
       updatedChapters[index] = { id: selectedChapter.id, name: selectedChapter.name };
@@ -355,7 +383,7 @@ export default function QuestionForm() {
 
   // Handle topic selection
   const handleTopicChange = (index: number, topicId: string) => {
-    const selectedTopic = topics.find((topic: Topic) => topic.id === topicId);
+    const selectedTopic = (topics as Topic[]).find((topic: Topic) => topic.id === topicId);
     if (selectedTopic) {
       const updatedTopics = [...form.getValues("syllabusMapping.topic")];
       updatedTopics[index] = { id: selectedTopic.id, name: selectedTopic.name };
@@ -462,7 +490,7 @@ export default function QuestionForm() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">None</SelectItem>
-                          {availableQuestions.map((question: Question) => (
+                          {(availableQuestions as Question[]).map((question: Question) => (
                             <SelectItem key={question.id} value={question.id}>
                               {question.id} - {question.questionTitle?.substring(0, 30)}...
                             </SelectItem>
@@ -720,6 +748,7 @@ export default function QuestionForm() {
                       size="icon"
                       onClick={() => optionsArray.remove(index)}
                       className="mt-6"
+                      disabled={optionsArray.fields.length <= 1}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -786,6 +815,7 @@ export default function QuestionForm() {
                       size="icon"
                       onClick={() => evaluationRubricArray.remove(index)}
                       className="mt-6"
+                      disabled={evaluationRubricArray.fields.length <= 1}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -1015,7 +1045,7 @@ export default function QuestionForm() {
                           <SelectValue placeholder="Select board" />
                         </SelectTrigger>
                         <SelectContent>
-                          {boards.map((board: Board) => (
+                          {(boards as Board[]).map((board: Board) => (
                             <SelectItem key={board.id} value={board.id}>{board.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1041,7 +1071,7 @@ export default function QuestionForm() {
                           <SelectValue placeholder="Select class" />
                         </SelectTrigger>
                         <SelectContent>
-                          {classes.map((cls: Class) => (
+                          {(classes as Class[]).map((cls: Class) => (
                             <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1067,7 +1097,7 @@ export default function QuestionForm() {
                           <SelectValue placeholder="Select subject" />
                         </SelectTrigger>
                         <SelectContent>
-                          {subjects.map((subject: Subject) => (
+                          {(subjects as Subject[]).map((subject: Subject) => (
                             <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1108,7 +1138,7 @@ export default function QuestionForm() {
                               <SelectValue placeholder="Select chapter" />
                             </SelectTrigger>
                             <SelectContent>
-                              {chapters.map((chapter: Chapter) => (
+                              {(chapters as Chapter[]).map((chapter: Chapter) => (
                                 <SelectItem key={chapter.id} value={chapter.id}>{chapter.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -1160,7 +1190,7 @@ export default function QuestionForm() {
                               <SelectValue placeholder="Select topic" />
                             </SelectTrigger>
                             <SelectContent>
-                              {topics.map((topic: Topic) => (
+                              {(topics as Topic[]).map((topic: Topic) => (
                                 <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>
                               ))}
                             </SelectContent>

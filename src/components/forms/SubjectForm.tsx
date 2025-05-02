@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,8 +25,11 @@ import * as api from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-// This is where the TypeScript error was occurring. Let's add a type definition for board.
-type Class = { id: string; name: string };
+// Define interfaces for our data types
+interface Class {
+  id: string;
+  name: string;
+}
 
 const formSchema = z.object({
   id: z.string().min(1, { message: "ID is required" }),
@@ -57,7 +61,8 @@ export function SubjectForm() {
   const [className, setClassName] = useState("");
 
   const handleClassChange = (classId: string) => {
-    const selectedClass = classes.find((cls: Class) => cls.id === classId);
+    // Add type assertion to specify that items in classes array conform to the Class interface
+    const selectedClass = (classes as Class[]).find((cls: Class) => cls.id === classId);
     if (selectedClass) {
       setSelectedClassId(classId);
       setClassName(selectedClass.name);
@@ -95,7 +100,10 @@ export function SubjectForm() {
                   <FormLabel>Select Class</FormLabel>
                   <Select
                     disabled={isLoadingClasses}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleClassChange(value);
+                    }}
                     value={field.value}
                   >
                     <FormControl>
@@ -104,7 +112,8 @@ export function SubjectForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {classes.map((cls) => (
+                      {/* Add type assertion for classes array */}
+                      {(classes as Class[]).map((cls: Class) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
                         </SelectItem>
