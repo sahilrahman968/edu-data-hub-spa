@@ -83,9 +83,9 @@ export const createBoard = async (id: string, name: string): Promise<ApiResponse
   }
 };
 
-export const getClasses = async (): Promise<any[]> => {
+export const getClasses = async (boardId): Promise<unknown[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/classes`, {
+    const response = await fetch(`${BASE_URL}/api/classes?boardId=${boardId}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -109,9 +109,9 @@ export const createClass = async (id: string, name: string, boardId: string): Pr
   }
 };
 
-export const getSubjects = async (): Promise<any[]> => {
+export const getSubjects = async (classId): Promise<any[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/subjects`, {
+    const response = await fetch(`${BASE_URL}/api/subjects?classId=${classId}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -135,9 +135,9 @@ export const createSubject = async (id: string, name: string, classId: string): 
   }
 };
 
-export const getChapters = async (): Promise<any[]> => {
+export const getChapters = async (subjectId): Promise<any[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/chapters`, {
+    const response = await fetch(`${BASE_URL}/api/chapters?subjectId=${subjectId}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -161,9 +161,9 @@ export const createChapter = async (id: string, name: string, subjectId: string)
   }
 };
 
-export const getTopics = async (): Promise<any[]> => {
+export const getTopics = async (chapterId): Promise<any[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/topics`, {
+    const response = await fetch(`${BASE_URL}/api/topics?chapterId=${chapterId}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
