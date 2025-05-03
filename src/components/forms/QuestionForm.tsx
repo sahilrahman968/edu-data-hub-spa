@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -132,7 +131,8 @@ const formSchema = z.object({
 }).refine((data) => {
   // If questionType is subjective, evaluationRubric is required
   if (data.questionType === "subjective") {
-    return data.evaluationRubric && data.evaluationRubric.length > 0;
+    return data.evaluationRubric && data.evaluationRubric.length > 0 && 
+           data.evaluationRubric.every(item => item.criterion && item.criterion.trim() !== "");
   }
   return true;
 }, {
@@ -142,9 +142,12 @@ const formSchema = z.object({
   // If questionType is matching, matchingDetails is required
   if (data.questionType === "matching") {
     return data.matchingDetails && 
-           data.matchingDetails.leftColumn.length > 0 && 
-           data.matchingDetails.rightColumn.length > 0 &&
-           data.matchingDetails.correctMatches.length > 0;
+           data.matchingDetails.leftColumn && data.matchingDetails.leftColumn.length > 0 && 
+           data.matchingDetails.leftColumn.every(item => item && item.trim() !== "") && 
+           data.matchingDetails.rightColumn && data.matchingDetails.rightColumn.length > 0 &&
+           data.matchingDetails.rightColumn.every(item => item && item.trim() !== "") &&
+           data.matchingDetails.correctMatches && data.matchingDetails.correctMatches.length > 0 &&
+           data.matchingDetails.correctMatches.every(match => match.from && match.from.trim() !== "" && match.to && match.to.trim() !== "");
   }
   return true;
 }, {
@@ -345,6 +348,7 @@ export default function QuestionForm() {
 
   // Update form values for matching when component mounts or questionType changes
   useEffect(() => {
+    // Don't set these values when questionType is not matching to avoid validation errors
     if (watchQuestionType === 'matching') {
       form.setValue('matchingDetails', {
         leftColumn: leftColumnItems,
@@ -449,11 +453,15 @@ export default function QuestionForm() {
       marks: data.marks,
       difficulty: data.difficulty,
       questionType: [data.questionType], // API expects array
-      year: data.year || "",
       source: data.source,
       createdBy: data.createdBy,
       syllabusMapping: data.syllabusMapping,
     };
+
+    // Add year field only if it's a previous year question
+    if (data.source === "previous_year") {
+      questionPayload.year = data.year;
+    }
 
     // Add question type specific fields
     if (data.questionType === "option_based" && data.options) {
@@ -489,6 +497,29 @@ export default function QuestionForm() {
       setIsLoading(false);
     }
   };
+
+  // Reset evaluation rubric when changing from subjective to another type
+  useEffect(() => {
+    if (watchQuestionType !== 'subjective') {
+      // Clear or reset evaluation rubric to avoid validation errors
+      form.clearErrors('evaluationRubric');
+    }
+    
+    if (watchQuestionType !== 'matching') {
+      // Clear or reset matching details to avoid validation errors
+      form.clearErrors('matchingDetails');
+      form.clearErrors('matchingDetails.leftColumn');
+      form.clearErrors('matchingDetails.rightColumn');
+      form.clearErrors('matchingDetails.correctMatches');
+    }
+  }, [watchQuestionType, form]);
+
+  // Reset year field when changing source from previous_year
+  useEffect(() => {
+    if (watchSource !== 'previous_year') {
+      form.clearErrors('year');
+    }
+  }, [watchSource, form]);
 
   // Debug submission - log form state whenever it changes
   useEffect(() => {
