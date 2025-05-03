@@ -83,6 +83,7 @@ const matchingSchema = z.object({
   })),
 });
 
+// Create a schema for the form with conditional validations
 const formSchema = z.object({
   id: z.string().min(1, { message: "Question ID is required" }),
   parentId: z.string().optional().nullable(),
@@ -128,6 +129,36 @@ const formSchema = z.object({
       name: z.string().min(1, { message: "Topic name is required" }),
     })).optional(),
   }),
+}).refine((data) => {
+  // If questionType is subjective, evaluationRubric is required
+  if (data.questionType === "subjective") {
+    return data.evaluationRubric && data.evaluationRubric.length > 0;
+  }
+  return true;
+}, {
+  message: "Evaluation rubric is required for subjective questions",
+  path: ["evaluationRubric"],
+}).refine((data) => {
+  // If questionType is matching, matchingDetails is required
+  if (data.questionType === "matching") {
+    return data.matchingDetails && 
+           data.matchingDetails.leftColumn.length > 0 && 
+           data.matchingDetails.rightColumn.length > 0 &&
+           data.matchingDetails.correctMatches.length > 0;
+  }
+  return true;
+}, {
+  message: "Matching details are required for matching questions",
+  path: ["matchingDetails"],
+}).refine((data) => {
+  // If source is previous_year, year is required
+  if (data.source === "previous_year") {
+    return data.year && data.year.trim() !== "";
+  }
+  return true;
+}, {
+  message: "Year is required for previous year questions",
+  path: ["year"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -192,9 +223,11 @@ export default function QuestionForm() {
         topic: [{ id: "", name: "" }],
       },
     },
+    mode: "onChange", // Add this to validate on change
   });
 
   const watchQuestionType = form.watch("questionType");
+  const watchSource = form.watch("source");
 
   // Fetch boards
   const { data: boards = [] } = useQuery({
@@ -310,7 +343,7 @@ export default function QuestionForm() {
     form.setValue('matchingDetails.rightColumn', newItems);
   };
 
-  // Update form values for matching when component mounts
+  // Update form values for matching when component mounts or questionType changes
   useEffect(() => {
     if (watchQuestionType === 'matching') {
       form.setValue('matchingDetails', {
@@ -319,7 +352,7 @@ export default function QuestionForm() {
         correctMatches: form.getValues('matchingDetails')?.correctMatches || [{ from: "", to: "" }],
       });
     }
-  }, [watchQuestionType, form]);
+  }, [watchQuestionType, form, leftColumnItems, rightColumnItems]);
 
   // Handle board selection
   const handleBoardChange = (boardId: string) => {
@@ -642,20 +675,22 @@ export default function QuestionForm() {
                   )}
                 />
 
-                {/* Year (optional) */}
-                <FormField
-                  control={form.control}
-                  name="year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter year (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Year (conditional based on source) */}
+                {watchSource === "previous_year" && (
+                  <FormField
+                    control={form.control}
+                    name="year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Year*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter year (required for Previous Year)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               {/* Question Title */}
@@ -787,7 +822,7 @@ export default function QuestionForm() {
             {watchQuestionType === "subjective" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Evaluation Rubric</h3>
+                  <h3 className="text-lg font-medium">Evaluation Rubric*</h3>
                   <Button
                     type="button"
                     variant="outline"
@@ -808,7 +843,7 @@ export default function QuestionForm() {
                             name={`evaluationRubric.${index}.criterion`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Criterion</FormLabel>
+                                <FormLabel>Criterion*</FormLabel>
                                 <FormControl>
                                   <Input {...field} />
                                 </FormControl>
@@ -824,7 +859,7 @@ export default function QuestionForm() {
                             name={`evaluationRubric.${index}.weight`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Weight</FormLabel>
+                                <FormLabel>Weight*</FormLabel>
                                 <FormControl>
                                   <Input type="number" min="1" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
                                 </FormControl>
@@ -888,7 +923,7 @@ export default function QuestionForm() {
               <div className="space-y-8">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Left Column Items</h3>
+                    <h3 className="text-lg font-medium">Left Column Items*</h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -927,7 +962,7 @@ export default function QuestionForm() {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Right Column Items</h3>
+                    <h3 className="text-lg font-medium">Right Column Items*</h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -966,7 +1001,7 @@ export default function QuestionForm() {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Correct Matches</h3>
+                    <h3 className="text-lg font-medium">Correct Matches*</h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -985,7 +1020,7 @@ export default function QuestionForm() {
                           name={`matchingDetails.correctMatches.${index}.from`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>From</FormLabel>
+                              <FormLabel>From*</FormLabel>
                               <Select
                                 value={field.value}
                                 onValueChange={field.onChange}
@@ -1013,7 +1048,7 @@ export default function QuestionForm() {
                           name={`matchingDetails.correctMatches.${index}.to`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>To</FormLabel>
+                              <FormLabel>To*</FormLabel>
                               <Select
                                 value={field.value}
                                 onValueChange={field.onChange}
