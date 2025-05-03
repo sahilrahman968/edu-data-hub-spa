@@ -101,40 +101,127 @@ export const formSchema = z.object({
       name: z.string().min(1, { message: "Topic name is required" }),
     })).optional(),
   }),
-}).refine((data) => {
-  // If questionType is subjective, evaluationRubric is required
+}).superRefine((data, ctx) => {
+  // Only validate evaluation rubric if question type is subjective
   if (data.questionType === "subjective") {
-    return data.evaluationRubric && data.evaluationRubric.length > 0 && 
-           data.evaluationRubric.every(item => item.criterion && item.criterion.trim() !== "");
+    if (!data.evaluationRubric || data.evaluationRubric.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Evaluation rubric is required for subjective questions",
+        path: ["evaluationRubric"]
+      });
+    } else {
+      // Check each evaluation rubric item
+      data.evaluationRubric.forEach((item, index) => {
+        if (!item.criterion || item.criterion.trim() === "") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.too_small,
+            minimum: 1,
+            type: "string",
+            inclusive: true,
+            message: "Criterion is required",
+            path: ["evaluationRubric", index, "criterion"]
+          });
+        }
+      });
+    }
   }
-  return true;
-}, {
-  message: "Evaluation rubric is required for subjective questions",
-  path: ["evaluationRubric"],
-}).refine((data) => {
-  // If questionType is matching, matchingDetails is required
+
+  // Only validate matching details if question type is matching
   if (data.questionType === "matching") {
-    return data.matchingDetails && 
-           data.matchingDetails.leftColumn && data.matchingDetails.leftColumn.length > 0 && 
-           data.matchingDetails.leftColumn.every(item => item && item.trim() !== "") && 
-           data.matchingDetails.rightColumn && data.matchingDetails.rightColumn.length > 0 &&
-           data.matchingDetails.rightColumn.every(item => item && item.trim() !== "") &&
-           data.matchingDetails.correctMatches && data.matchingDetails.correctMatches.length > 0 &&
-           data.matchingDetails.correctMatches.every(match => match.from && match.from.trim() !== "" && match.to && match.to.trim() !== "");
+    if (!data.matchingDetails) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Matching details are required for matching questions",
+        path: ["matchingDetails"]
+      });
+    } else {
+      // Check left column
+      if (!data.matchingDetails.leftColumn || data.matchingDetails.leftColumn.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Left column items are required",
+          path: ["matchingDetails", "leftColumn"]
+        });
+      } else {
+        data.matchingDetails.leftColumn.forEach((item, index) => {
+          if (!item || item.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.too_small,
+              minimum: 1,
+              type: "string",
+              inclusive: true,
+              message: "Left column item is required",
+              path: ["matchingDetails", "leftColumn", index]
+            });
+          }
+        });
+      }
+
+      // Check right column
+      if (!data.matchingDetails.rightColumn || data.matchingDetails.rightColumn.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Right column items are required",
+          path: ["matchingDetails", "rightColumn"]
+        });
+      } else {
+        data.matchingDetails.rightColumn.forEach((item, index) => {
+          if (!item || item.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.too_small,
+              minimum: 1,
+              type: "string",
+              inclusive: true,
+              message: "Right column item is required",
+              path: ["matchingDetails", "rightColumn", index]
+            });
+          }
+        });
+      }
+
+      // Check correct matches
+      if (!data.matchingDetails.correctMatches || data.matchingDetails.correctMatches.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Correct matches are required",
+          path: ["matchingDetails", "correctMatches"]
+        });
+      } else {
+        data.matchingDetails.correctMatches.forEach((match, index) => {
+          if (!match.from || match.from.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.too_small,
+              minimum: 1,
+              type: "string",
+              inclusive: true,
+              message: "From value is required",
+              path: ["matchingDetails", "correctMatches", index, "from"]
+            });
+          }
+          if (!match.to || match.to.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.too_small,
+              minimum: 1,
+              type: "string",
+              inclusive: true,
+              message: "To value is required",
+              path: ["matchingDetails", "correctMatches", index, "to"]
+            });
+          }
+        });
+      }
+    }
   }
-  return true;
-}, {
-  message: "Matching details are required for matching questions",
-  path: ["matchingDetails"],
-}).refine((data) => {
-  // If source is previous_year, year is required
-  if (data.source === "previous_year") {
-    return data.year && data.year.trim() !== "";
+
+  // Only validate year field if source is previous_year
+  if (data.source === "previous_year" && (!data.year || data.year.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Year is required for previous year questions",
+      path: ["year"]
+    });
   }
-  return true;
-}, {
-  message: "Year is required for previous year questions",
-  path: ["year"],
 });
 
 export type FormData = z.infer<typeof formSchema>;
