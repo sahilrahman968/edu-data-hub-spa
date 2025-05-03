@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -310,6 +310,17 @@ export default function QuestionForm() {
     form.setValue('matchingDetails.rightColumn', newItems);
   };
 
+  // Update form values for matching when component mounts
+  useEffect(() => {
+    if (watchQuestionType === 'matching') {
+      form.setValue('matchingDetails', {
+        leftColumn: leftColumnItems,
+        rightColumn: rightColumnItems,
+        correctMatches: form.getValues('matchingDetails')?.correctMatches || [{ from: "", to: "" }],
+      });
+    }
+  }, [watchQuestionType, form]);
+
   // Handle board selection
   const handleBoardChange = (boardId: string) => {
     // Add type assertion to specify that items in boards array conform to the Board interface
@@ -444,6 +455,22 @@ export default function QuestionForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Debug submission - log form state whenever it changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      console.log("Form changed:", name, type, value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Manual submit handler for debugging
+  const handleManualSubmit = () => {
+    console.log("Manual submit clicked");
+    console.log("Current form state:", form.getValues());
+    console.log("Form errors:", form.formState.errors);
+    form.handleSubmit(onSubmit)();
   };
 
   return (
@@ -1212,10 +1239,23 @@ export default function QuestionForm() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Creating..." : "Create Question"}
-            </Button>
+            {/* Form Debugging Information */}
+            <div className="bg-gray-100 p-4 rounded-md">
+              <pre className="text-xs overflow-auto max-h-[100px]">
+                {JSON.stringify(form.formState.errors, null, 2)}
+              </pre>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isLoading} className="flex-1">
+                {isLoading ? "Creating..." : "Create Question"}
+              </Button>
+              
+              <Button type="button" onClick={handleManualSubmit} variant="secondary" className="flex-1">
+                Debug Submit
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
