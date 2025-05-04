@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/sonner";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
+import { Plus, Check } from "lucide-react";
 
 // Import types
 import { 
@@ -39,6 +40,10 @@ export default function QuestionForm() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [childQuestions, setChildQuestions] = useState<FormData[]>([]);
+  const [isParentCreated, setIsParentCreated] = useState(false);
+  const [parentQuestion, setParentQuestion] = useState<FormData | null>(null);
+  const [mode, setMode] = useState<"parent" | "child">("parent");
 
   // Get current user information from local storage
   const getUserFromToken = () => {
@@ -92,6 +97,83 @@ export default function QuestionForm() {
     },
     mode: "onChange",
   });
+
+  const resetFormForChildQuestion = () => {
+    if (!parentQuestion) return;
+    
+    form.reset({
+      id: "",
+      parentId: parentQuestion.id,
+      hasChild: false,
+      questionTitle: "",
+      markupQuestionTitle: "",
+      marks: 0,
+      difficulty: "MEDIUM",
+      questionType: "SINGLE_CORRECT_MCQ",
+      options: [{ id: "1", text: "", isCorrect: false }],
+      evaluationRubric: [{ criterion: "", weight: 1, keywordHints: [] }],
+      passageDetails: { passageTitle: "", passageText: "" },
+      matchingDetails: {
+        leftColumn: [""],
+        rightColumn: [""],
+        correctMatches: [{ from: "", to: "" }],
+      },
+      year: parentQuestion.year || "",
+      source: parentQuestion.source,
+      createdBy: parentQuestion.createdBy,
+      childIds: [],
+      syllabusMapping: {
+        board: { id: "", name: "" },
+        class: { id: "", name: "" },
+        subject: { id: "", name: "" },
+        chapter: [{ id: "", name: "" }],
+        topic: [{ id: "", name: "" }],
+      },
+    });
+    
+    setValidationErrors({});
+  };
+
+  const resetEntireForm = () => {
+    form.reset({
+      id: "",
+      parentId: null,
+      hasChild: false,
+      questionTitle: "",
+      markupQuestionTitle: "",
+      marks: 0,
+      difficulty: "MEDIUM",
+      questionType: "SINGLE_CORRECT_MCQ",
+      options: [{ id: "1", text: "", isCorrect: false }],
+      evaluationRubric: [{ criterion: "", weight: 1, keywordHints: [] }],
+      passageDetails: { passageTitle: "", passageText: "" },
+      matchingDetails: {
+        leftColumn: [""],
+        rightColumn: [""],
+        correctMatches: [{ from: "", to: "" }],
+      },
+      year: "",
+      source: "USER_GENERATED",
+      createdBy: {
+        id: currentUser.id,
+        name: currentUser.name,
+      },
+      childIds: [],
+      syllabusMapping: {
+        board: { id: "", name: "" },
+        class: { id: "", name: "" },
+        subject: { id: "", name: "" },
+        chapter: [{ id: "", name: "" }],
+        topic: [{ id: "", name: "" }],
+      },
+    });
+    
+    setIsParentCreated(false);
+    setParentQuestion(null);
+    setChildQuestions([]);
+    setValidationErrors({});
+    setMode("parent");
+  };
 
   const watchQuestionType = form.watch("questionType");
   const watchSource = form.watch("source");
@@ -230,7 +312,7 @@ export default function QuestionForm() {
       delete newErrors.passageDetails;
     }
     
-    if ((watchQuestionType !== 'SINGLE_CORRECT_MCQ' || watchQuestionType !== 'MULTIPLE_CORRECT_MCQ') && newErrors.options) {
+    if (watchQuestionType !== 'SINGLE_CORRECT_MCQ' && watchQuestionType !== 'MULTIPLE_CORRECT_MCQ' && newErrors.options) {
       delete newErrors.options;
     }
     
@@ -253,6 +335,113 @@ export default function QuestionForm() {
       setValidationErrors({});
     }
   }, [watchHasChild]);
+
+  const handleAddChildQuestion = async () => {
+    // Validate child question
+    const childData = form.getValues();
+    const errors = validateFormData(childData);
+    
+    setValidationErrors(errors);
+    
+    // Check if there are any errors
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error("Please fix the form errors before adding child question");
+      return;
+    }
+    
+    // Add child question to the list
+    setChildQuestions([...childQuestions, childData]);
+    toast.success("Child question added");
+    
+    // Reset form for next child question
+    resetFormForChildQuestion();
+  };
+  
+  const handleCreateParent = async () => {
+    // Validate parent question
+    const parentData = form.getValues();
+    
+    if (!parentData.hasChild) {
+      toast.error("Please mark the question as having child questions");
+      form.setValue("hasChild", true);
+      return;
+    }
+    
+    const errors = validateFormData(parentData);
+    
+    setValidationErrors(errors);
+    
+    // Check if there are any errors
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error("Please fix the form errors before creating parent");
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // Create parent question
+      console.log("Creating parent question:", parentData);
+      await api.createQuestion({
+        id: parentData.id,
+        parentId: null,
+        hasChild: true,
+        source: parentData.source,
+        year: parentData.year,
+        createdBy: parentData.createdBy
+      });
+      
+      toast.success("Parent question created");
+      setIsParentCreated(true);
+      setParentQuestion(parentData);
+      setMode("child");
+      
+      // Reset form to prepare for child questions
+      resetFormForChildQuestion();
+    } catch (error) {
+      console.error("Failed to create parent question:", error);
+      toast.error("Failed to create parent question");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleSubmitAllChildQuestions = async () => {
+    setIsLoading(true);
+    try {
+      // Submit all child questions
+      for (const childQuestion of childQuestions) {
+        await api.createQuestion({
+          ...childQuestion,
+          parentId: parentQuestion?.id
+        });
+      }
+      
+      toast.success(`${childQuestions.length} child questions created successfully`);
+      
+      // Update parent question with child IDs
+      if (parentQuestion) {
+        await api.createQuestion({
+          id: parentQuestion.id,
+          childIds: childQuestions.map(q => q.id),
+          hasChild: true,
+          source: parentQuestion.source,
+          year: parentQuestion.year,
+          createdBy: parentQuestion.createdBy
+        });
+      }
+      
+      // Reset form completely
+      resetEntireForm();
+      queryClient.invalidateQueries({ queryKey: ["questions"] });
+    } catch (error) {
+      console.error("Failed to submit child questions:", error);
+      toast.error("Failed to submit child questions");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     console.log("Form submitted with data:", data);
@@ -341,35 +530,65 @@ export default function QuestionForm() {
     return () => subscription.unsubscribe();
   }, [form]);
 
-  // Manual submit handler for debugging
-  const handleManualSubmit = () => {
-    console.log("Manual submit clicked");
-    console.log("Current form state:", form.getValues());
-    console.log("Form errors:", validationErrors);
-    form.handleSubmit(onSubmit)();
-  };
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Create Question</CardTitle>
-        <CardDescription>Add a new educational question to the system</CardDescription>
+        <CardDescription>
+          {mode === "parent" 
+            ? "Create a parent question first" 
+            : `Creating child questions for parent: ${parentQuestion?.id}`}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Question Information */}
-            <QuestionBasicInfo 
-              form={form} 
-              watchSource={watchSource}
-              watchHasChild={watchHasChild}
-              availableQuestions={availableQuestions as Question[]}
-              errors={validationErrors}
-            />
-
-            {/* Only show these fields if hasChild is false */}
-            {!watchHasChild && (
+            {/* Parent question creation mode */}
+            {mode === "parent" && (
               <>
+                <QuestionBasicInfo 
+                  form={form} 
+                  watchSource={watchSource}
+                  watchHasChild={true} // Force hasChild=true for parent creation
+                  availableQuestions={availableQuestions as Question[]}
+                  errors={validationErrors}
+                />
+                
+                <div className="flex justify-end mt-6">
+                  <Button 
+                    type="button" 
+                    onClick={handleCreateParent} 
+                    disabled={isLoading}
+                    className="flex items-center gap-2"
+                  >
+                    Create Parent Question
+                  </Button>
+                </div>
+              </>
+            )}
+            
+            {/* Child question creation mode */}
+            {mode === "child" && (
+              <>
+                <div className="bg-slate-100 p-4 rounded-md mb-6">
+                  <h3 className="font-medium">Parent Question Information</h3>
+                  <p className="text-sm text-slate-600">ID: {parentQuestion?.id}</p>
+                  <p className="text-sm text-slate-600">Source: {parentQuestion?.source}</p>
+                  {parentQuestion?.source === "PREVIOUS_YEAR" && (
+                    <p className="text-sm text-slate-600">Year: {parentQuestion?.year}</p>
+                  )}
+                  <p className="text-sm text-slate-600">Child Questions: {childQuestions.length}</p>
+                </div>
+                
+                <QuestionBasicInfo 
+                  form={form} 
+                  watchSource={watchSource}
+                  watchHasChild={false}
+                  availableQuestions={availableQuestions as Question[]}
+                  errors={validationErrors}
+                  isChildQuestion={true}
+                />
+                
                 {/* Question Type Specific Fields */}
                 {(watchQuestionType === "SINGLE_CORRECT_MCQ" || watchQuestionType === "MULTIPLE_CORRECT_MCQ") && (
                   <OptionBasedQuestion 
@@ -418,26 +637,57 @@ export default function QuestionForm() {
                   handleTopicChange={handleTopicChange}
                   errors={validationErrors}
                 />
+                
+                {/* Child Questions List */}
+                {childQuestions.length > 0 && (
+                  <div className="bg-slate-100 p-4 rounded-md">
+                    <h3 className="font-medium mb-2">Added Child Questions</h3>
+                    <ul className="space-y-2 max-h-[200px] overflow-y-auto">
+                      {childQuestions.map((question, index) => (
+                        <li key={index} className="bg-white p-2 rounded border">
+                          <p className="font-medium">ID: {question.id}</p>
+                          <p className="text-sm text-slate-600 line-clamp-2">
+                            {question.questionTitle}
+                          </p>
+                          <p className="text-xs text-slate-500">Type: {question.questionType}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex flex-wrap gap-4 justify-end">
+                  <Button 
+                    type="button" 
+                    onClick={handleAddChildQuestion} 
+                    disabled={isLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Add Child Question
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="secondary"
+                    onClick={resetFormForChildQuestion} 
+                    disabled={isLoading}
+                  >
+                    Reset Child Form
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={handleSubmitAllChildQuestions} 
+                    disabled={isLoading || childQuestions.length === 0}
+                    className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Check size={18} />
+                    Submit All Child Questions
+                  </Button>
+                </div>
               </>
             )}
-
-            {/* Form Debugging Information */}
-            <div className="bg-gray-100 p-4 rounded-md">
-              <pre className="text-xs overflow-auto max-h-[100px]">
-                {JSON.stringify(validationErrors, null, 2)}
-              </pre>
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? "Creating..." : "Create Question"}
-              </Button>
-              
-              <Button type="button" onClick={handleManualSubmit} variant="secondary" className="flex-1">
-                Debug Submit
-              </Button>
-            </div>
           </form>
         </Form>
       </CardContent>

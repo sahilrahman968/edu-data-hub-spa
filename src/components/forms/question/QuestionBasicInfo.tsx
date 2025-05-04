@@ -13,9 +13,17 @@ interface QuestionBasicInfoProps {
   watchHasChild: boolean;
   availableQuestions: Question[];
   errors: ValidationErrors;
+  isChildQuestion?: boolean;
 }
 
-export default function QuestionBasicInfo({ form, watchSource, watchHasChild, availableQuestions, errors }: QuestionBasicInfoProps) {
+export default function QuestionBasicInfo({ 
+  form, 
+  watchSource, 
+  watchHasChild, 
+  availableQuestions, 
+  errors,
+  isChildQuestion = false 
+}: QuestionBasicInfoProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Basic Information</h3>
@@ -37,93 +45,99 @@ export default function QuestionBasicInfo({ form, watchSource, watchHasChild, av
           )}
         />
 
-        {/* Parent Question ID */}
-        <Controller
-          control={form.control}
-          name="parentId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Parent Question ID</FormLabel>
-              <Select
-                value={field.value || "none"}
-                onValueChange={(value) => field.onChange(value === "none" ? null : value)}
-              >
+        {/* Parent Question ID - Only show if not in child question mode */}
+        {!isChildQuestion && (
+          <Controller
+            control={form.control}
+            name="parentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parent Question ID</FormLabel>
+                <Select
+                  value={field.value || "none"}
+                  onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select parent question (optional)" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {availableQuestions.map((question) => (
+                      <SelectItem key={question.id} value={question.id}>
+                        {question.id} - {question.questionTitle?.substring(0, 30)}...
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {getErrorMessage(errors, "parentId") && (
+                  <FormMessage>{getErrorMessage(errors, "parentId")}</FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Has Child - Only show if not in child question mode */}
+        {!isChildQuestion && (
+          <Controller
+            control={form.control}
+            name="hasChild"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select parent question (optional)" />
-                  </SelectTrigger>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {availableQuestions.map((question) => (
-                    <SelectItem key={question.id} value={question.id}>
-                      {question.id} - {question.questionTitle?.substring(0, 30)}...
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {getErrorMessage(errors, "parentId") && (
-                <FormMessage>{getErrorMessage(errors, "parentId")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
+                <div className="space-y-1 leading-none">
+                  <FormLabel>
+                    Has Child Questions
+                  </FormLabel>
+                </div>
+                {getErrorMessage(errors, "hasChild") && (
+                  <FormMessage>{getErrorMessage(errors, "hasChild")}</FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
+        )}
 
-        {/* Has Child */}
-        <Controller
-          control={form.control}
-          name="hasChild"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>
-                  Has Child Questions
-                </FormLabel>
-              </div>
-              {getErrorMessage(errors, "hasChild") && (
-                <FormMessage>{getErrorMessage(errors, "hasChild")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
+        {/* Source - Only show if not in child question mode (since it's inherited from parent) */}
+        {!isChildQuestion && (
+          <Controller
+            control={form.control}
+            name="source"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Source*</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="PREVIOUS_YEAR">Previous Year</SelectItem>
+                    <SelectItem value="AI_GENERATED">AI Generated</SelectItem>
+                    <SelectItem value="USER_GENERATED">User Generated</SelectItem>
+                  </SelectContent>
+                </Select>
+                {getErrorMessage(errors, "source") && (
+                  <FormMessage>{getErrorMessage(errors, "source")}</FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
+        )}
 
-        {/* Source */}
-        <Controller
-          control={form.control}
-          name="source"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Source*</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select source" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="PREVIOUS_YEAR">Previous Year</SelectItem>
-                  <SelectItem value="AI_GENERATED">AI Generated</SelectItem>
-                  <SelectItem value="USER_GENERATED">User Generated</SelectItem>
-                </SelectContent>
-              </Select>
-              {getErrorMessage(errors, "source") && (
-                <FormMessage>{getErrorMessage(errors, "source")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
-        {/* Year (conditional based on source) */}
-        {watchSource === "PREVIOUS_YEAR" && (
+        {/* Year (conditional based on source) - Only show if not in child question mode */}
+        {!isChildQuestion && watchSource === "PREVIOUS_YEAR" && (
           <Controller
             control={form.control}
             name="year"
