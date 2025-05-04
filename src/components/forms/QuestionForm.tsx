@@ -65,8 +65,8 @@ export default function QuestionForm() {
       questionTitle: "",
       markupQuestionTitle: "",
       marks: 0,
-      difficulty: "medium",
-      questionType: "option_based",
+      difficulty: "MEDIUM",
+      questionType: "SINGLE_CORRECT_MCQ",
       options: [{ id: "1", text: "", isCorrect: false }],
       evaluationRubric: [{ criterion: "", weight: 1, keywordHints: [] }],
       passageDetails: { passageTitle: "", passageText: "" },
@@ -76,7 +76,7 @@ export default function QuestionForm() {
         correctMatches: [{ from: "", to: "" }],
       },
       year: "",
-      source: "user_generated",
+      source: "USER_GENERATED",
       createdBy: {
         id: currentUser.id,
         name: currentUser.name,
@@ -217,19 +217,19 @@ export default function QuestionForm() {
   useEffect(() => {
     const newErrors = { ...validationErrors };
     
-    if (watchQuestionType !== 'subjective' && newErrors.evaluationRubric) {
+    if (watchQuestionType !== 'SUBJECTIVE' && newErrors.evaluationRubric) {
       delete newErrors.evaluationRubric;
     }
     
-    if (watchQuestionType !== 'matching' && newErrors.matchingDetails) {
+    if (watchQuestionType !== 'MATCHING' && newErrors.matchingDetails) {
       delete newErrors.matchingDetails;
     }
     
-    if (watchQuestionType !== 'passage' && newErrors.passageDetails) {
+    if (watchQuestionType !== 'PASSAGE' && newErrors.passageDetails) {
       delete newErrors.passageDetails;
     }
     
-    if (watchQuestionType !== 'option_based' && newErrors.options) {
+    if ((watchQuestionType !== 'SINGLE_CORRECT_MCQ' || watchQuestionType !== 'MULTIPLE_CORRECT_MCQ') && newErrors.options) {
       delete newErrors.options;
     }
     
@@ -238,7 +238,7 @@ export default function QuestionForm() {
 
   // Clean up year validation error when source changes
   useEffect(() => {
-    if (watchSource !== 'previous_year' && validationErrors.year) {
+    if (watchSource !== 'PREVIOUS_YEAR' && validationErrors.year) {
       const newErrors = { ...validationErrors };
       delete newErrors.year;
       setValidationErrors(newErrors);
@@ -252,15 +252,15 @@ export default function QuestionForm() {
     const errors = validateFormData(data);
     
     // Don't validate fields that aren't relevant to the current question type
-    if (data.questionType !== 'subjective' && errors.evaluationRubric) {
+    if (data.questionType !== 'SUBJECTIVE' && errors.evaluationRubric) {
       delete errors.evaluationRubric;
     }
     
-    if (data.questionType !== 'matching' && errors.matchingDetails) {
+    if (data.questionType !== 'MATCHING' && errors.matchingDetails) {
       delete errors.matchingDetails;
     }
     
-    if (data.source !== 'previous_year' && errors.year) {
+    if (data.source !== 'PREVIOUS_YEAR' && errors.year) {
       delete errors.year;
     }
     
@@ -296,14 +296,14 @@ export default function QuestionForm() {
     }
 
     // Add question type specific fields
-    if (data.questionType === "option_based" && data.options) {
+    if ((data.questionType === "MULTIPLE_CORRECT_MCQ" || data.questionType === "SINGLE_CORRECT_MCQ") && data.options) {
       questionPayload.options = data.options;
-    } else if (data.questionType === "subjective" && data.evaluationRubric) {
+    } else if (data.questionType === "SUBJECTIVE" && data.evaluationRubric) {
       questionPayload.evaluationRubric = data.evaluationRubric;
-    } else if (data.questionType === "passage" && data.passageDetails) {
+    } else if (data.questionType === "PASSAGE" && data.passageDetails) {
       questionPayload.passageDetails = data.passageDetails;
-    } else if (data.questionType === "matching") {
-      // For matching questions, get the values from our state
+    } else if (data.questionType === "MATCHING") {
+      // For MATCHING questions, get the values from our state
       questionPayload.matchingDetails = {
         leftColumn: data.matchingDetails?.leftColumn.filter(item => item.trim() !== '') || [],
         rightColumn: data.matchingDetails?.rightColumn.filter(item => item.trim() !== '') || [],
@@ -365,28 +365,28 @@ export default function QuestionForm() {
             />
 
             {/* Question Type Specific Fields */}
-            {watchQuestionType === "option_based" && (
+            {(watchQuestionType === "SINGLE_CORRECT_MCQ" || watchQuestionType === "MULTIPLE_CORRECT_MCQ") && (
               <OptionBasedQuestion 
                 form={form} 
                 errors={validationErrors}
               />
             )}
 
-            {watchQuestionType === "subjective" && (
+            {watchQuestionType === "SUBJECTIVE" && (
               <SubjectiveQuestion 
                 form={form} 
                 errors={validationErrors}
               />
             )}
 
-            {watchQuestionType === "passage" && (
+            {watchQuestionType === "PASSAGE" && (
               <PassageQuestion 
                 form={form} 
                 errors={validationErrors}
               />
             )}
 
-            {watchQuestionType === "matching" && (
+            {watchQuestionType === "MATCHING" && (
               <MatchingQuestion 
                 form={form} 
                 errors={validationErrors}
