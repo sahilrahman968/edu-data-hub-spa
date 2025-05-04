@@ -1,8 +1,5 @@
 
 import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,26 +12,30 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm, Controller } from "react-hook-form";
 
-const formSchema = z.object({
-  id: z.string().min(3, { message: "ID must be at least 3 characters" }),
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+interface FormData {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
-type FormData = z.infer<typeof formSchema>;
+interface FormErrors {
+  id?: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
 
 const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
   const { signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       id: "",
       name: "",
@@ -44,7 +45,42 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
     },
   });
 
+  const validateForm = (data: FormData): FormErrors => {
+    const newErrors: FormErrors = {};
+    
+    if (!data.id || data.id.length < 3) {
+      newErrors.id = "ID must be at least 3 characters";
+    }
+    
+    if (!data.name || data.name.length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    }
+    
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    if (!data.password || data.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    if (!data.confirmPassword || data.confirmPassword.length < 6) {
+      newErrors.confirmPassword = "Password must be at least 6 characters";
+    } else if (data.password !== data.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
+    return newErrors;
+  };
+
   const onSubmit = async (data: FormData) => {
+    const formErrors = validateForm(data);
+    
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await signup(data.id, data.name, data.email, data.password);
@@ -67,7 +103,7 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+            <Controller
               control={form.control}
               name="id"
               render={({ field }) => (
@@ -76,11 +112,12 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input placeholder="teacher123" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.id && <FormMessage>{errors.id}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="name"
               render={({ field }) => (
@@ -89,11 +126,12 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input placeholder="John Doe" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.name && <FormMessage>{errors.name}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -102,11 +140,12 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input placeholder="your@email.com" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.email && <FormMessage>{errors.email}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="password"
               render={({ field }) => (
@@ -115,11 +154,12 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input type="password" placeholder="******" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.password && <FormMessage>{errors.password}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="confirmPassword"
               render={({ field }) => (
@@ -128,10 +168,11 @@ const SignUpForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input type="password" placeholder="******" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.confirmPassword && <FormMessage>{errors.confirmPassword}</FormMessage>}
                 </FormItem>
               )}
             />
+            
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating account..." : "Sign Up"}
             </Button>

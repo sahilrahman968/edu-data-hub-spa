@@ -1,17 +1,17 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UseFormReturn } from "react-hook-form";
-import { FormData } from "./types";
+import { UseFormReturn, Controller, useFieldArray } from "react-hook-form";
+import { FormData, ValidationErrors, getErrorMessage } from "./types";
 import { Plus, Trash2 } from "lucide-react";
-import { useFieldArray } from "react-hook-form";
 
 interface SubjectiveQuestionProps {
   form: UseFormReturn<FormData>;
+  errors: ValidationErrors;
 }
 
-export default function SubjectiveQuestion({ form }: SubjectiveQuestionProps) {
+export default function SubjectiveQuestion({ form, errors }: SubjectiveQuestionProps) {
   const evaluationRubricArray = useFieldArray({
     control: form.control,
     name: "evaluationRubric",
@@ -36,7 +36,7 @@ export default function SubjectiveQuestion({ form }: SubjectiveQuestionProps) {
           <div className="flex-1 space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-3">
-                <FormField
+                <Controller
                   control={form.control}
                   name={`evaluationRubric.${index}.criterion`}
                   render={({ field }) => (
@@ -45,14 +45,21 @@ export default function SubjectiveQuestion({ form }: SubjectiveQuestionProps) {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      {errors.evaluationRubric && 
+                       Array.isArray(errors.evaluationRubric) && 
+                       errors.evaluationRubric[index] && 
+                       (errors.evaluationRubric[index] as ValidationErrors).criterion && (
+                        <FormMessage>
+                          {(errors.evaluationRubric[index] as ValidationErrors).criterion as string}
+                        </FormMessage>
+                      )}
                     </FormItem>
                   )}
                 />
               </div>
 
               <div className="md:col-span-1">
-                <FormField
+                <Controller
                   control={form.control}
                   name={`evaluationRubric.${index}.weight`}
                   render={({ field }) => (
@@ -66,7 +73,14 @@ export default function SubjectiveQuestion({ form }: SubjectiveQuestionProps) {
                           onChange={(e) => field.onChange(parseInt(e.target.value))} 
                         />
                       </FormControl>
-                      <FormMessage />
+                      {errors.evaluationRubric && 
+                       Array.isArray(errors.evaluationRubric) && 
+                       errors.evaluationRubric[index] && 
+                       (errors.evaluationRubric[index] as ValidationErrors).weight && (
+                        <FormMessage>
+                          {(errors.evaluationRubric[index] as ValidationErrors).weight as string}
+                        </FormMessage>
+                      )}
                     </FormItem>
                   )}
                 />

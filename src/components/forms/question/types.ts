@@ -1,6 +1,4 @@
 
-import { z } from "zod";
-
 // Define interfaces for our data types
 export interface Board {
   id: string;
@@ -32,196 +30,300 @@ export interface Question {
   questionTitle?: string;
 }
 
-export const questionTypeSchema = z.enum(["option_based", "subjective", "passage", "matching"]);
+export type QuestionType = "option_based" | "subjective" | "passage" | "matching";
+export type DifficultyLevel = "easy" | "medium" | "hard";
+export type SourceType = "previous_year" | "ai_generated" | "user_generated";
 
-export const optionSchema = z.object({
-  id: z.string().min(1, { message: "Option ID is required" }),
-  text: z.string().min(1, { message: "Option text is required" }),
-  isCorrect: z.boolean().default(false),
-});
+export interface Option {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
 
-export const evaluationRubricSchema = z.object({
-  criterion: z.string().min(1, { message: "Criterion is required" }),
-  weight: z.number().min(1, { message: "Weight must be at least 1" }),
-  keywordHints: z.array(z.string()).optional(),
-});
+export interface EvaluationRubric {
+  criterion: string;
+  weight: number;
+  keywordHints?: string[];
+}
 
-export const matchingSchema = z.object({
-  leftColumn: z.array(z.string().min(1, { message: "Left column item is required" })),
-  rightColumn: z.array(z.string().min(1, { message: "Right column item is required" })),
-  correctMatches: z.array(z.object({
-    from: z.string().min(1, { message: "From value is required" }),
-    to: z.string().min(1, { message: "To value is required" }),
-  })),
-});
+export interface MatchItem {
+  from: string;
+  to: string;
+}
 
-// Create a schema for the form with conditional validations
-export const formSchema = z.object({
-  id: z.string().min(1, { message: "Question ID is required" }),
-  parentId: z.string().optional().nullable(),
-  hasChild: z.boolean().default(false),
-  questionTitle: z.string().min(1, { message: "Question title is required" }),
-  markupQuestionTitle: z.string().optional(),
-  marks: z.coerce.number().min(0, { message: "Marks must be a positive number" }),
-  difficulty: z.enum(["easy", "medium", "hard"]),
-  questionType: questionTypeSchema,
-  options: z.array(optionSchema).optional(),
-  evaluationRubric: z.array(evaluationRubricSchema).optional(),
-  passageDetails: z.object({
-    passageTitle: z.string().optional(),
-    passageText: z.string().optional(),
-  }).optional(),
-  matchingDetails: matchingSchema.optional(),
-  year: z.string().optional(),
-  source: z.enum(["previous_year", "ai_generated", "user_generated"]),
-  createdBy: z.object({
-    id: z.string(),
-    name: z.string(),
-  }),
-  childIds: z.array(z.string()).optional(),
-  syllabusMapping: z.object({
-    board: z.object({
-      id: z.string().min(1, { message: "Board ID is required" }),
-      name: z.string().min(1, { message: "Board name is required" }),
-    }),
-    class: z.object({
-      id: z.string().min(1, { message: "Class ID is required" }),
-      name: z.string().min(1, { message: "Class name is required" }),
-    }),
-    subject: z.object({
-      id: z.string().min(1, { message: "Subject ID is required" }),
-      name: z.string().min(1, { message: "Subject name is required" }),
-    }),
-    chapter: z.array(z.object({
-      id: z.string().min(1, { message: "Chapter ID is required" }),
-      name: z.string().min(1, { message: "Chapter name is required" }),
-    })).min(1, { message: "At least one chapter is required" }),
-    topic: z.array(z.object({
-      id: z.string().min(1, { message: "Topic ID is required" }),
-      name: z.string().min(1, { message: "Topic name is required" }),
-    })).optional(),
-  }),
-}).superRefine((data, ctx) => {
-  // Only validate evaluation rubric if question type is subjective
-  if (data.questionType === "subjective") {
-    if (!data.evaluationRubric || data.evaluationRubric.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Evaluation rubric is required for subjective questions",
-        path: ["evaluationRubric"]
-      });
+export interface MatchingDetails {
+  leftColumn: string[];
+  rightColumn: string[];
+  correctMatches: MatchItem[];
+}
+
+export interface PassageDetails {
+  passageTitle?: string;
+  passageText?: string;
+}
+
+export interface Creator {
+  id: string;
+  name: string;
+}
+
+export interface SyllabusMapping {
+  board: Board;
+  class: Class;
+  subject: Subject;
+  chapter: Chapter[];
+  topic?: Topic[];
+}
+
+export interface FormData {
+  id: string;
+  parentId?: string | null;
+  hasChild: boolean;
+  questionTitle: string;
+  markupQuestionTitle?: string;
+  marks: number;
+  difficulty: DifficultyLevel;
+  questionType: QuestionType;
+  options?: Option[];
+  evaluationRubric?: EvaluationRubric[];
+  passageDetails?: PassageDetails;
+  matchingDetails?: MatchingDetails;
+  year?: string;
+  source: SourceType;
+  createdBy: Creator;
+  childIds?: string[];
+  syllabusMapping: SyllabusMapping;
+}
+
+export interface ValidationErrors {
+  [key: string]: string | ValidationErrors | Array<ValidationErrors>;
+}
+
+// Custom validation function for the form data
+export function validateFormData(data: Partial<FormData>): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  // Required fields
+  if (!data.id || data.id.trim() === "") {
+    errors.id = "Question ID is required";
+  }
+
+  if (!data.questionTitle || data.questionTitle.trim() === "") {
+    errors.questionTitle = "Question title is required";
+  }
+
+  if (data.marks === undefined || data.marks < 0) {
+    errors.marks = "Marks must be a positive number";
+  }
+
+  if (!data.difficulty) {
+    errors.difficulty = "Difficulty is required";
+  }
+
+  if (!data.questionType) {
+    errors.questionType = "Question type is required";
+  }
+
+  if (!data.source) {
+    errors.source = "Source is required";
+  }
+
+  // Validate options for option_based questions
+  if (data.questionType === "option_based" && data.options) {
+    const optionErrors: ValidationErrors[] = [];
+    let hasError = false;
+
+    data.options.forEach((option, index) => {
+      const optionError: ValidationErrors = {};
+
+      if (!option.id || option.id.trim() === "") {
+        optionError.id = "Option ID is required";
+        hasError = true;
+      }
+
+      if (!option.text || option.text.trim() === "") {
+        optionError.text = "Option text is required";
+        hasError = true;
+      }
+
+      optionErrors[index] = optionError;
+    });
+
+    if (hasError) {
+      errors.options = optionErrors;
+    }
+
+    // Check if at least one option is marked as correct
+    if (data.options.every(option => !option.isCorrect)) {
+      if (!errors.options) {
+        errors.options = [];
+      }
+      (errors.options as ValidationErrors[]).push({ general: "At least one option must be marked as correct" });
+    }
+  }
+
+  // Validate evaluation rubric for subjective questions
+  if (data.questionType === "subjective" && data.evaluationRubric) {
+    const rubricErrors: ValidationErrors[] = [];
+    let hasError = false;
+
+    data.evaluationRubric.forEach((rubric, index) => {
+      const rubricError: ValidationErrors = {};
+
+      if (!rubric.criterion || rubric.criterion.trim() === "") {
+        rubricError.criterion = "Criterion is required";
+        hasError = true;
+      }
+
+      if (rubric.weight < 1) {
+        rubricError.weight = "Weight must be at least 1";
+        hasError = true;
+      }
+
+      rubricErrors[index] = rubricError;
+    });
+
+    if (hasError) {
+      errors.evaluationRubric = rubricErrors;
+    }
+  }
+
+  // Validate matching details for matching questions
+  if (data.questionType === "matching" && data.matchingDetails) {
+    const matchingErrors: ValidationErrors = {};
+
+    // Left column validation
+    if (!data.matchingDetails.leftColumn || data.matchingDetails.leftColumn.length === 0) {
+      matchingErrors.leftColumn = "Left column items are required";
     } else {
-      // Check each evaluation rubric item
-      data.evaluationRubric.forEach((item, index) => {
-        if (!item.criterion || item.criterion.trim() === "") {
-          ctx.addIssue({
-            code: z.ZodIssueCode.too_small,
-            minimum: 1,
-            type: "string",
-            inclusive: true,
-            message: "Criterion is required",
-            path: ["evaluationRubric", index, "criterion"]
-          });
+      const leftColumnErrors: ValidationErrors[] = [];
+      let hasLeftError = false;
+
+      data.matchingDetails.leftColumn.forEach((item, index) => {
+        if (!item || item.trim() === "") {
+          leftColumnErrors[index] = "Left column item is required";
+          hasLeftError = true;
         }
       });
-    }
-  }
 
-  // Only validate matching details if question type is matching
-  if (data.questionType === "matching") {
-    if (!data.matchingDetails) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Matching details are required for matching questions",
-        path: ["matchingDetails"]
-      });
+      if (hasLeftError) {
+        matchingErrors.leftColumn = leftColumnErrors;
+      }
+    }
+
+    // Right column validation
+    if (!data.matchingDetails.rightColumn || data.matchingDetails.rightColumn.length === 0) {
+      matchingErrors.rightColumn = "Right column items are required";
     } else {
-      // Check left column
-      if (!data.matchingDetails.leftColumn || data.matchingDetails.leftColumn.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Left column items are required",
-          path: ["matchingDetails", "leftColumn"]
-        });
-      } else {
-        data.matchingDetails.leftColumn.forEach((item, index) => {
-          if (!item || item.trim() === "") {
-            ctx.addIssue({
-              code: z.ZodIssueCode.too_small,
-              minimum: 1,
-              type: "string",
-              inclusive: true,
-              message: "Left column item is required",
-              path: ["matchingDetails", "leftColumn", index]
-            });
-          }
-        });
-      }
+      const rightColumnErrors: ValidationErrors[] = [];
+      let hasRightError = false;
 
-      // Check right column
-      if (!data.matchingDetails.rightColumn || data.matchingDetails.rightColumn.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Right column items are required",
-          path: ["matchingDetails", "rightColumn"]
-        });
-      } else {
-        data.matchingDetails.rightColumn.forEach((item, index) => {
-          if (!item || item.trim() === "") {
-            ctx.addIssue({
-              code: z.ZodIssueCode.too_small,
-              minimum: 1,
-              type: "string",
-              inclusive: true,
-              message: "Right column item is required",
-              path: ["matchingDetails", "rightColumn", index]
-            });
-          }
-        });
-      }
+      data.matchingDetails.rightColumn.forEach((item, index) => {
+        if (!item || item.trim() === "") {
+          rightColumnErrors[index] = "Right column item is required";
+          hasRightError = true;
+        }
+      });
 
-      // Check correct matches
-      if (!data.matchingDetails.correctMatches || data.matchingDetails.correctMatches.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Correct matches are required",
-          path: ["matchingDetails", "correctMatches"]
-        });
-      } else {
-        data.matchingDetails.correctMatches.forEach((match, index) => {
-          if (!match.from || match.from.trim() === "") {
-            ctx.addIssue({
-              code: z.ZodIssueCode.too_small,
-              minimum: 1,
-              type: "string",
-              inclusive: true,
-              message: "From value is required",
-              path: ["matchingDetails", "correctMatches", index, "from"]
-            });
-          }
-          if (!match.to || match.to.trim() === "") {
-            ctx.addIssue({
-              code: z.ZodIssueCode.too_small,
-              minimum: 1,
-              type: "string",
-              inclusive: true,
-              message: "To value is required",
-              path: ["matchingDetails", "correctMatches", index, "to"]
-            });
-          }
-        });
+      if (hasRightError) {
+        matchingErrors.rightColumn = rightColumnErrors;
       }
+    }
+
+    // Correct matches validation
+    if (!data.matchingDetails.correctMatches || data.matchingDetails.correctMatches.length === 0) {
+      matchingErrors.correctMatches = "Correct matches are required";
+    } else {
+      const matchErrors: ValidationErrors[] = [];
+      let hasMatchError = false;
+
+      data.matchingDetails.correctMatches.forEach((match, index) => {
+        const matchError: ValidationErrors = {};
+
+        if (!match.from || match.from.trim() === "") {
+          matchError.from = "From value is required";
+          hasMatchError = true;
+        }
+
+        if (!match.to || match.to.trim() === "") {
+          matchError.to = "To value is required";
+          hasMatchError = true;
+        }
+
+        matchErrors[index] = matchError;
+      });
+
+      if (hasMatchError) {
+        matchingErrors.correctMatches = matchErrors;
+      }
+    }
+
+    if (Object.keys(matchingErrors).length > 0) {
+      errors.matchingDetails = matchingErrors;
     }
   }
 
-  // Only validate year field if source is previous_year
+  // Validate year field if source is previous_year
   if (data.source === "previous_year" && (!data.year || data.year.trim() === "")) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Year is required for previous year questions",
-      path: ["year"]
-    });
+    errors.year = "Year is required for previous year questions";
   }
-});
 
-export type FormData = z.infer<typeof formSchema>;
+  // Validate syllabus mapping
+  if (data.syllabusMapping) {
+    const syllabusErrors: ValidationErrors = {};
+
+    if (!data.syllabusMapping.board?.id || !data.syllabusMapping.board?.name) {
+      syllabusErrors.board = "Board is required";
+    }
+
+    if (!data.syllabusMapping.class?.id || !data.syllabusMapping.class?.name) {
+      syllabusErrors.class = "Class is required";
+    }
+
+    if (!data.syllabusMapping.subject?.id || !data.syllabusMapping.subject?.name) {
+      syllabusErrors.subject = "Subject is required";
+    }
+
+    if (!data.syllabusMapping.chapter || data.syllabusMapping.chapter.length === 0) {
+      syllabusErrors.chapter = "At least one chapter is required";
+    } else {
+      let hasInvalidChapter = false;
+      data.syllabusMapping.chapter.forEach(chapter => {
+        if (!chapter.id || !chapter.name) {
+          hasInvalidChapter = true;
+        }
+      });
+      if (hasInvalidChapter) {
+        syllabusErrors.chapter = "Invalid chapter data";
+      }
+    }
+
+    if (Object.keys(syllabusErrors).length > 0) {
+      errors.syllabusMapping = syllabusErrors;
+    }
+  } else {
+    errors.syllabusMapping = "Syllabus mapping is required";
+  }
+
+  return errors;
+}
+
+// Helper function to check if form has errors
+export function hasErrors(errors: ValidationErrors): boolean {
+  return Object.keys(errors).length > 0;
+}
+
+// Helper function to get nested error message
+export function getErrorMessage(errors: ValidationErrors | undefined, path: string): string | undefined {
+  if (!errors) return undefined;
+  
+  const pathParts = path.split('.');
+  let current: any = errors;
+  
+  for (const part of pathParts) {
+    if (current[part] === undefined) return undefined;
+    current = current[part];
+  }
+  
+  return typeof current === 'string' ? current : undefined;
+}

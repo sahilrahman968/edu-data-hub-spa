@@ -1,20 +1,21 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { UseFormReturn } from "react-hook-form";
-import { FormData } from "./types";
+import { UseFormReturn, Controller } from "react-hook-form";
+import { FormData, ValidationErrors, getErrorMessage } from "./types";
 
 interface PassageQuestionProps {
   form: UseFormReturn<FormData>;
+  errors: ValidationErrors;
 }
 
-export default function PassageQuestion({ form }: PassageQuestionProps) {
+export default function PassageQuestion({ form, errors }: PassageQuestionProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Passage Details</h3>
       
-      <FormField
+      <Controller
         control={form.control}
         name="passageDetails.passageTitle"
         render={({ field }) => (
@@ -23,12 +24,14 @@ export default function PassageQuestion({ form }: PassageQuestionProps) {
             <FormControl>
               <Input {...field} />
             </FormControl>
-            <FormMessage />
+            {getErrorMessage(errors, "passageDetails.passageTitle") && (
+              <FormMessage>{getErrorMessage(errors, "passageDetails.passageTitle")}</FormMessage>
+            )}
           </FormItem>
         )}
       />
 
-      <FormField
+      <Controller
         control={form.control}
         name="passageDetails.passageText"
         render={({ field }) => (
@@ -37,7 +40,9 @@ export default function PassageQuestion({ form }: PassageQuestionProps) {
             <FormControl>
               <Textarea className="min-h-[200px]" {...field} />
             </FormControl>
-            <FormMessage />
+            {getErrorMessage(errors, "passageDetails.passageText") && (
+              <FormMessage>{getErrorMessage(errors, "passageDetails.passageText")}</FormMessage>
+            )}
           </FormItem>
         )}
       />

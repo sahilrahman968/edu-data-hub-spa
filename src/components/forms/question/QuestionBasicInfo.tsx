@@ -1,26 +1,26 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UseFormReturn } from "react-hook-form";
-import { FormData } from "./types";
-import { Question } from "./types";
+import { UseFormReturn, Controller } from "react-hook-form";
+import { FormData, Question, ValidationErrors, getErrorMessage } from "./types";
 
 interface QuestionBasicInfoProps {
   form: UseFormReturn<FormData>;
   watchSource: "previous_year" | "ai_generated" | "user_generated";
   availableQuestions: Question[];
+  errors: ValidationErrors;
 }
 
-export default function QuestionBasicInfo({ form, watchSource, availableQuestions }: QuestionBasicInfoProps) {
+export default function QuestionBasicInfo({ form, watchSource, availableQuestions, errors }: QuestionBasicInfoProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Basic Information</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Question ID */}
-        <FormField
+        <Controller
           control={form.control}
           name="id"
           render={({ field }) => (
@@ -29,13 +29,15 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
               <FormControl>
                 <Input placeholder="Enter unique question ID" {...field} />
               </FormControl>
-              <FormMessage />
+              {getErrorMessage(errors, "id") && (
+                <FormMessage>{getErrorMessage(errors, "id")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Parent Question ID */}
-        <FormField
+        <Controller
           control={form.control}
           name="parentId"
           render={({ field }) => (
@@ -45,9 +47,11 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 value={field.value || "none"}
                 onValueChange={(value) => field.onChange(value === "none" ? null : value)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent question (optional)" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select parent question (optional)" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {availableQuestions.map((question) => (
@@ -57,13 +61,15 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              {getErrorMessage(errors, "parentId") && (
+                <FormMessage>{getErrorMessage(errors, "parentId")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Has Child */}
-        <FormField
+        <Controller
           control={form.control}
           name="hasChild"
           render={({ field }) => (
@@ -79,28 +85,37 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   Has Child Questions
                 </FormLabel>
               </div>
-              <FormMessage />
+              {getErrorMessage(errors, "hasChild") && (
+                <FormMessage>{getErrorMessage(errors, "hasChild")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Marks */}
-        <FormField
+        <Controller
           control={form.control}
           name="marks"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marks*</FormLabel>
               <FormControl>
-                <Input type="number" min="0" {...field} />
+                <Input 
+                  type="number" 
+                  min="0" 
+                  {...field} 
+                  onChange={(e) => field.onChange(parseInt(e.target.value))} 
+                />
               </FormControl>
-              <FormMessage />
+              {getErrorMessage(errors, "marks") && (
+                <FormMessage>{getErrorMessage(errors, "marks")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Difficulty */}
-        <FormField
+        <Controller
           control={form.control}
           name="difficulty"
           render={({ field }) => (
@@ -110,22 +125,26 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 value={field.value}
                 onValueChange={field.onChange}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty level" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select difficulty level" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="hard">Hard</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              {getErrorMessage(errors, "difficulty") && (
+                <FormMessage>{getErrorMessage(errors, "difficulty")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Question Type */}
-        <FormField
+        <Controller
           control={form.control}
           name="questionType"
           render={({ field }) => (
@@ -135,9 +154,11 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 value={field.value}
                 onValueChange={field.onChange}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select question type" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select question type" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
                   <SelectItem value="option_based">Multiple Choice</SelectItem>
                   <SelectItem value="subjective">Subjective</SelectItem>
@@ -145,13 +166,15 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   <SelectItem value="matching">Matching</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              {getErrorMessage(errors, "questionType") && (
+                <FormMessage>{getErrorMessage(errors, "questionType")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Source */}
-        <FormField
+        <Controller
           control={form.control}
           name="source"
           render={({ field }) => (
@@ -161,23 +184,27 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 value={field.value}
                 onValueChange={field.onChange}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select source" />
+                  </SelectTrigger>
+                </FormControl>
                 <SelectContent>
                   <SelectItem value="previous_year">Previous Year</SelectItem>
                   <SelectItem value="ai_generated">AI Generated</SelectItem>
                   <SelectItem value="user_generated">User Generated</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              {getErrorMessage(errors, "source") && (
+                <FormMessage>{getErrorMessage(errors, "source")}</FormMessage>
+              )}
             </FormItem>
           )}
         />
 
         {/* Year (conditional based on source) */}
         {watchSource === "previous_year" && (
-          <FormField
+          <Controller
             control={form.control}
             name="year"
             render={({ field }) => (
@@ -186,7 +213,9 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 <FormControl>
                   <Input placeholder="Enter year (required for Previous Year)" {...field} />
                 </FormControl>
-                <FormMessage />
+                {getErrorMessage(errors, "year") && (
+                  <FormMessage>{getErrorMessage(errors, "year")}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -194,7 +223,7 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
       </div>
 
       {/* Question Title */}
-      <FormField
+      <Controller
         control={form.control}
         name="questionTitle"
         render={({ field }) => (
@@ -207,13 +236,15 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 {...field}
               />
             </FormControl>
-            <FormMessage />
+            {getErrorMessage(errors, "questionTitle") && (
+              <FormMessage>{getErrorMessage(errors, "questionTitle")}</FormMessage>
+            )}
           </FormItem>
         )}
       />
 
       {/* Markup Question Title (optional) */}
-      <FormField
+      <Controller
         control={form.control}
         name="markupQuestionTitle"
         render={({ field }) => (
@@ -226,7 +257,9 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                 {...field}
               />
             </FormControl>
-            <FormMessage />
+            {getErrorMessage(errors, "markupQuestionTitle") && (
+              <FormMessage>{getErrorMessage(errors, "markupQuestionTitle")}</FormMessage>
+            )}
           </FormItem>
         )}
       />

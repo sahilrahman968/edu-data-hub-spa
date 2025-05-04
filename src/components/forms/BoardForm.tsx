@@ -1,11 +1,8 @@
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
+import { 
   Form,
   FormControl,
   FormField,
@@ -13,31 +10,56 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import * as api from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
 
-const formSchema = z.object({
-  id: z.string().min(1, { message: "ID is required" }),
-  name: z.string().min(1, { message: "Name is required" }),
-});
+interface FormData {
+  id: string;
+  name: string;
+}
 
-type FormData = z.infer<typeof formSchema>;
+interface FormErrors {
+  id?: string;
+  name?: string;
+}
 
 export function BoardForm() {
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       id: "",
       name: "",
     },
   });
 
+  const validateForm = (data: FormData): FormErrors => {
+    const newErrors: FormErrors = {};
+    
+    if (!data.id || data.id.trim() === "") {
+      newErrors.id = "ID is required";
+    }
+    
+    if (!data.name || data.name.trim() === "") {
+      newErrors.name = "Name is required";
+    }
+    
+    return newErrors;
+  };
+
   const onSubmit = async (data: FormData) => {
+    const formErrors = validateForm(data);
+    
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await api.createBoard(data.id, data.name);
@@ -60,7 +82,7 @@ export function BoardForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+            <Controller
               control={form.control}
               name="id"
               render={({ field }) => (
@@ -69,11 +91,12 @@ export function BoardForm() {
                   <FormControl>
                     <Input placeholder="Enter unique board ID" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.id && <FormMessage>{errors.id}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="name"
               render={({ field }) => (
@@ -82,10 +105,11 @@ export function BoardForm() {
                   <FormControl>
                     <Input placeholder="Enter board name" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.name && <FormMessage>{errors.name}</FormMessage>}
                 </FormItem>
               )}
             />
+            
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating..." : "Create Board"}
             </Button>

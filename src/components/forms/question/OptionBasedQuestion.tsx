@@ -1,18 +1,18 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UseFormReturn } from "react-hook-form";
-import { FormData } from "./types";
+import { UseFormReturn, Controller, useFieldArray } from "react-hook-form";
+import { FormData, ValidationErrors, getErrorMessage } from "./types";
 import { Plus, Trash2 } from "lucide-react";
-import { useFieldArray } from "react-hook-form";
 
 interface OptionBasedQuestionProps {
   form: UseFormReturn<FormData>;
+  errors: ValidationErrors;
 }
 
-export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) {
+export default function OptionBasedQuestion({ form, errors }: OptionBasedQuestionProps) {
   const optionsArray = useFieldArray({
     control: form.control,
     name: "options",
@@ -37,7 +37,7 @@ export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) 
           <div className="flex-1 space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="md:col-span-1">
-                <FormField
+                <Controller
                   control={form.control}
                   name={`options.${index}.id`}
                   render={({ field }) => (
@@ -46,14 +46,19 @@ export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) 
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      {errors.options && 
+                       Array.isArray(errors.options) && 
+                       errors.options[index] && 
+                       (errors.options[index] as ValidationErrors).id && (
+                        <FormMessage>{(errors.options[index] as ValidationErrors).id as string}</FormMessage>
+                      )}
                     </FormItem>
                   )}
                 />
               </div>
 
               <div className="md:col-span-3">
-                <FormField
+                <Controller
                   control={form.control}
                   name={`options.${index}.text`}
                   render={({ field }) => (
@@ -62,14 +67,19 @@ export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) 
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
-                      <FormMessage />
+                      {errors.options && 
+                       Array.isArray(errors.options) && 
+                       errors.options[index] && 
+                       (errors.options[index] as ValidationErrors).text && (
+                        <FormMessage>{(errors.options[index] as ValidationErrors).text as string}</FormMessage>
+                      )}
                     </FormItem>
                   )}
                 />
               </div>
 
               <div className="md:col-span-1">
-                <FormField
+                <Controller
                   control={form.control}
                   name={`options.${index}.isCorrect`}
                   render={({ field }) => (
@@ -81,7 +91,6 @@ export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) 
                         />
                       </FormControl>
                       <FormLabel>Correct</FormLabel>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -101,6 +110,17 @@ export default function OptionBasedQuestion({ form }: OptionBasedQuestionProps) 
           </Button>
         </div>
       ))}
+
+      {/* General option error message (e.g., "At least one option must be marked as correct") */}
+      {errors.options && 
+       Array.isArray(errors.options) && 
+       errors.options.some(opt => typeof opt === 'object' && (opt as ValidationErrors).general) && (
+        <FormMessage>
+          {(errors.options.find(opt => 
+            typeof opt === 'object' && (opt as ValidationErrors).general
+          ) as ValidationErrors).general as string}
+        </FormMessage>
+      )}
     </div>
   );
 }

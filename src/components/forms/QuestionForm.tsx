@@ -1,17 +1,26 @@
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import * as api from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useForm, Controller } from "react-hook-form";
 
 // Import types
-import { formSchema, FormData, Board, Class, Subject, Chapter, Topic, Question } from "./question/types";
+import { 
+  FormData, 
+  Board, 
+  Class, 
+  Subject, 
+  Chapter, 
+  Topic, 
+  Question, 
+  validateFormData, 
+  ValidationErrors 
+} from "./question/types";
 
 // Import components
 import QuestionBasicInfo from "./question/QuestionBasicInfo";
@@ -29,6 +38,7 @@ export default function QuestionForm() {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   // Get current user information from local storage
   const getUserFromToken = () => {
@@ -48,7 +58,6 @@ export default function QuestionForm() {
   const currentUser = getUserFromToken();
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       id: "",
       parentId: null,
@@ -204,31 +213,66 @@ export default function QuestionForm() {
     }
   };
 
-  // Reset evaluation rubric when changing from subjective to another type
+  // Clean up irrelevant validation errors when question type changes
   useEffect(() => {
-    if (watchQuestionType !== 'subjective') {
-      // Clear or reset evaluation rubric to avoid validation errors
-      form.clearErrors('evaluationRubric');
+    const newErrors = { ...validationErrors };
+    
+    if (watchQuestionType !== 'subjective' && newErrors.evaluationRubric) {
+      delete newErrors.evaluationRubric;
     }
     
-    if (watchQuestionType !== 'matching') {
-      // Clear or reset matching details to avoid validation errors
-      form.clearErrors('matchingDetails');
-      form.clearErrors('matchingDetails.leftColumn');
-      form.clearErrors('matchingDetails.rightColumn');
-      form.clearErrors('matchingDetails.correctMatches');
+    if (watchQuestionType !== 'matching' && newErrors.matchingDetails) {
+      delete newErrors.matchingDetails;
     }
-  }, [watchQuestionType, form]);
+    
+    if (watchQuestionType !== 'passage' && newErrors.passageDetails) {
+      delete newErrors.passageDetails;
+    }
+    
+    if (watchQuestionType !== 'option_based' && newErrors.options) {
+      delete newErrors.options;
+    }
+    
+    setValidationErrors(newErrors);
+  }, [watchQuestionType]);
 
-  // Reset year field when changing source from previous_year
+  // Clean up year validation error when source changes
   useEffect(() => {
-    if (watchSource !== 'previous_year') {
-      form.clearErrors('year');
+    if (watchSource !== 'previous_year' && validationErrors.year) {
+      const newErrors = { ...validationErrors };
+      delete newErrors.year;
+      setValidationErrors(newErrors);
     }
-  }, [watchSource, form]);
+  }, [watchSource, validationErrors]);
 
   const onSubmit = async (data: FormData) => {
     console.log("Form submitted with data:", data);
+    
+    // Custom validation
+    const errors = validateFormData(data);
+    
+    // Don't validate fields that aren't relevant to the current question type
+    if (data.questionType !== 'subjective' && errors.evaluationRubric) {
+      delete errors.evaluationRubric;
+    }
+    
+    if (data.questionType !== 'matching' && errors.matchingDetails) {
+      delete errors.matchingDetails;
+    }
+    
+    if (data.source !== 'previous_year' && errors.year) {
+      delete errors.year;
+    }
+    
+    setValidationErrors(errors);
+    
+    // Check if there are any errors
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error("Please fix the form errors before submitting");
+      return;
+    }
+    
     setIsLoading(true);
 
     // Create question payload based on question type
@@ -277,6 +321,7 @@ export default function QuestionForm() {
       await api.createQuestion(questionPayload);
       toast.success("Question created successfully");
       form.reset();
+      setValidationErrors({});
       queryClient.invalidateQueries({ queryKey: ["questions"] });
     } catch (error) {
       console.error("Failed to create question:", error);
@@ -298,7 +343,7 @@ export default function QuestionForm() {
   const handleManualSubmit = () => {
     console.log("Manual submit clicked");
     console.log("Current form state:", form.getValues());
-    console.log("Form errors:", form.formState.errors);
+    console.log("Form errors:", validationErrors);
     form.handleSubmit(onSubmit)();
   };
 
@@ -315,24 +360,37 @@ export default function QuestionForm() {
             <QuestionBasicInfo 
               form={form} 
               watchSource={watchSource} 
-              availableQuestions={availableQuestions as Question[]} 
+              availableQuestions={availableQuestions as Question[]}
+              errors={validationErrors}
             />
 
             {/* Question Type Specific Fields */}
             {watchQuestionType === "option_based" && (
-              <OptionBasedQuestion form={form} />
+              <OptionBasedQuestion 
+                form={form} 
+                errors={validationErrors}
+              />
             )}
 
             {watchQuestionType === "subjective" && (
-              <SubjectiveQuestion form={form} />
+              <SubjectiveQuestion 
+                form={form} 
+                errors={validationErrors}
+              />
             )}
 
             {watchQuestionType === "passage" && (
-              <PassageQuestion form={form} />
+              <PassageQuestion 
+                form={form} 
+                errors={validationErrors}
+              />
             )}
 
             {watchQuestionType === "matching" && (
-              <MatchingQuestion form={form} />
+              <MatchingQuestion 
+                form={form} 
+                errors={validationErrors}
+              />
             )}
 
             {/* Syllabus Mapping Section */}
@@ -352,12 +410,13 @@ export default function QuestionForm() {
               handleSubjectChange={handleSubjectChange}
               handleChapterChange={handleChapterChange}
               handleTopicChange={handleTopicChange}
+              errors={validationErrors}
             />
 
             {/* Form Debugging Information */}
             <div className="bg-gray-100 p-4 rounded-md">
               <pre className="text-xs overflow-auto max-h-[100px]">
-                {JSON.stringify(form.formState.errors, null, 2)}
+                {JSON.stringify(validationErrors, null, 2)}
               </pre>
             </div>
 

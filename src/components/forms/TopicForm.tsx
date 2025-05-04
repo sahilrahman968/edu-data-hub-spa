@@ -1,8 +1,5 @@
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,18 +21,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import * as api from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
 
-const formSchema = z.object({
-  id: z.string().min(1, { message: "ID is required" }),
-  name: z.string().min(1, { message: "Name is required" }),
-  chapterId: z.string().min(1, { message: "Chapter is required" }),
-});
+interface FormData {
+  id: string;
+  name: string;
+  chapterId: string;
+}
 
-type FormData = z.infer<typeof formSchema>;
+interface FormErrors {
+  id?: string;
+  name?: string;
+  chapterId?: string;
+}
 
 export function TopicForm() {
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const { data: chapters = [], isLoading: isLoadingChapters } = useQuery({
     queryKey: ["chapters"],
@@ -43,7 +46,6 @@ export function TopicForm() {
   });
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       id: "",
       name: "",
@@ -51,7 +53,32 @@ export function TopicForm() {
     },
   });
 
+  const validateForm = (data: FormData): FormErrors => {
+    const newErrors: FormErrors = {};
+    
+    if (!data.id || data.id.trim() === "") {
+      newErrors.id = "ID is required";
+    }
+    
+    if (!data.name || data.name.trim() === "") {
+      newErrors.name = "Name is required";
+    }
+    
+    if (!data.chapterId || data.chapterId.trim() === "") {
+      newErrors.chapterId = "Chapter is required";
+    }
+    
+    return newErrors;
+  };
+
   const onSubmit = async (data: FormData) => {
+    const formErrors = validateForm(data);
+    
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await api.createTopic(data.id, data.name, data.chapterId);
@@ -74,7 +101,7 @@ export function TopicForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+            <Controller
               control={form.control}
               name="chapterId"
               render={({ field }) => (
@@ -98,11 +125,12 @@ export function TopicForm() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  {errors.chapterId && <FormMessage>{errors.chapterId}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="id"
               render={({ field }) => (
@@ -111,11 +139,12 @@ export function TopicForm() {
                   <FormControl>
                     <Input placeholder="Enter unique topic ID" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.id && <FormMessage>{errors.id}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="name"
               render={({ field }) => (
@@ -124,10 +153,11 @@ export function TopicForm() {
                   <FormControl>
                     <Input placeholder="Enter topic name" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.name && <FormMessage>{errors.name}</FormMessage>}
                 </FormItem>
               )}
             />
+            
             <Button type="submit" className="w-full" disabled={isLoading || isLoadingChapters}>
               {isLoading ? "Creating..." : "Create Topic"}
             </Button>

@@ -1,18 +1,19 @@
 
 import { useState, useEffect } from "react";
-import { FormItem, FormControl, FormLabel, FormMessage, FormField } from "@/components/ui/form";
+import { FormItem, FormControl, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UseFormReturn, useFieldArray } from "react-hook-form";
-import { FormData } from "./types";
+import { UseFormReturn, Controller, useFieldArray } from "react-hook-form";
+import { FormData, ValidationErrors, getErrorMessage } from "./types";
 import { Plus, Trash2 } from "lucide-react";
 
 interface MatchingQuestionProps {
   form: UseFormReturn<FormData>;
+  errors: ValidationErrors;
 }
 
-export default function MatchingQuestion({ form }: MatchingQuestionProps) {
+export default function MatchingQuestion({ form, errors }: MatchingQuestionProps) {
   // Define left and right column arrays as regular state
   const [leftColumnItems, setLeftColumnItems] = useState<string[]>(['']);
   const [rightColumnItems, setRightColumnItems] = useState<string[]>(['']);
@@ -98,7 +99,12 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                   onChange={(e) => updateLeftColumnItem(index, e.target.value)} 
                 />
               </FormControl>
-              <FormMessage />
+              {errors.matchingDetails && 
+               errors.matchingDetails.leftColumn && 
+               Array.isArray(errors.matchingDetails.leftColumn) && 
+               errors.matchingDetails.leftColumn[index] && (
+                <FormMessage>{errors.matchingDetails.leftColumn[index] as string}</FormMessage>
+              )}
             </FormItem>
 
             <Button
@@ -112,6 +118,13 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
             </Button>
           </div>
         ))}
+        
+        {/* General error for left column */}
+        {errors.matchingDetails && 
+         errors.matchingDetails.leftColumn && 
+         typeof errors.matchingDetails.leftColumn === 'string' && (
+          <FormMessage>{errors.matchingDetails.leftColumn}</FormMessage>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -137,7 +150,12 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                   onChange={(e) => updateRightColumnItem(index, e.target.value)}
                 />
               </FormControl>
-              <FormMessage />
+              {errors.matchingDetails && 
+               errors.matchingDetails.rightColumn && 
+               Array.isArray(errors.matchingDetails.rightColumn) && 
+               errors.matchingDetails.rightColumn[index] && (
+                <FormMessage>{errors.matchingDetails.rightColumn[index] as string}</FormMessage>
+              )}
             </FormItem>
 
             <Button
@@ -151,6 +169,13 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
             </Button>
           </div>
         ))}
+        
+        {/* General error for right column */}
+        {errors.matchingDetails && 
+         errors.matchingDetails.rightColumn && 
+         typeof errors.matchingDetails.rightColumn === 'string' && (
+          <FormMessage>{errors.matchingDetails.rightColumn}</FormMessage>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -169,7 +194,7 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
         {correctMatchesArray.fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-2">
-              <FormField
+              <Controller
                 control={form.control}
                 name={`matchingDetails.correctMatches.${index}.from`}
                 render={({ field }) => (
@@ -179,9 +204,11 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                       value={field.value}
                       onValueChange={field.onChange}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select left item" />
-                      </SelectTrigger>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select left item" />
+                        </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
                         {leftColumnItems.map((item, idx) => (
                           item && (
@@ -190,14 +217,22 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    {errors.matchingDetails && 
+                     errors.matchingDetails.correctMatches && 
+                     Array.isArray(errors.matchingDetails.correctMatches) && 
+                     errors.matchingDetails.correctMatches[index] && 
+                     (errors.matchingDetails.correctMatches[index] as ValidationErrors).from && (
+                      <FormMessage>
+                        {(errors.matchingDetails.correctMatches[index] as ValidationErrors).from as string}
+                      </FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
             </div>
 
             <div className="md:col-span-2">
-              <FormField
+              <Controller
                 control={form.control}
                 name={`matchingDetails.correctMatches.${index}.to`}
                 render={({ field }) => (
@@ -207,9 +242,11 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                       value={field.value}
                       onValueChange={field.onChange}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select right item" />
-                      </SelectTrigger>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select right item" />
+                        </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
                         {rightColumnItems.map((item, idx) => (
                           item && (
@@ -218,7 +255,15 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    {errors.matchingDetails && 
+                     errors.matchingDetails.correctMatches && 
+                     Array.isArray(errors.matchingDetails.correctMatches) && 
+                     errors.matchingDetails.correctMatches[index] && 
+                     (errors.matchingDetails.correctMatches[index] as ValidationErrors).to && (
+                      <FormMessage>
+                        {(errors.matchingDetails.correctMatches[index] as ValidationErrors).to as string}
+                      </FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
@@ -238,6 +283,13 @@ export default function MatchingQuestion({ form }: MatchingQuestionProps) {
             </div>
           </div>
         ))}
+        
+        {/* General error for correct matches */}
+        {errors.matchingDetails && 
+         errors.matchingDetails.correctMatches && 
+         typeof errors.matchingDetails.correctMatches === 'string' && (
+          <FormMessage>{errors.matchingDetails.correctMatches}</FormMessage>
+        )}
       </div>
     </div>
   );

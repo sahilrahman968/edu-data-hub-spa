@@ -1,8 +1,5 @@
 
 import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,27 +13,52 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
+import { useForm, Controller } from "react-hook-form";
 
-const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-});
+interface FormData {
+  email: string;
+  password: string;
+}
 
-type FormData = z.infer<typeof formSchema>;
+interface FormErrors {
+  email?: string;
+  password?: string;
+}
 
 const SignInForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
+  const validateForm = (data: FormData): FormErrors => {
+    const newErrors: FormErrors = {};
+    
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    if (!data.password || data.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    return newErrors;
+  };
+
   const onSubmit = async (data: FormData) => {
+    const formErrors = validateForm(data);
+    
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await login(data.email, data.password);
@@ -59,7 +81,7 @@ const SignInForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+            <Controller
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -68,11 +90,12 @@ const SignInForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input placeholder="your@email.com" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.email && <FormMessage>{errors.email}</FormMessage>}
                 </FormItem>
               )}
             />
-            <FormField
+            
+            <Controller
               control={form.control}
               name="password"
               render={({ field }) => (
@@ -81,10 +104,11 @@ const SignInForm = ({ onToggleForm }: { onToggleForm: () => void }) => {
                   <FormControl>
                     <Input type="password" placeholder="******" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  {errors.password && <FormMessage>{errors.password}</FormMessage>}
                 </FormItem>
               )}
             />
+            
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
