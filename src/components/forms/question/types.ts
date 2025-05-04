@@ -30,9 +30,9 @@ export interface Question {
   questionTitle?: string;
 }
 
-export type QuestionType = "option_based" | "subjective" | "passage" | "matching";
-export type DifficultyLevel = "easy" | "medium" | "hard";
-export type SourceType = "previous_year" | "ai_generated" | "user_generated";
+export type QuestionType = "MULTIPLE_CORRECT_MCQ" | "SINGLE_CORRECT_MCQ" | "SUBJECTIVE" | "PASSAGE" | "MATCHING";
+export type DifficultyLevel = "EASY" | "MEDIUM" | "HARD";
+export type SourceType = "PREVIOUS_YEAR" | "AI_GENERATED" | "USER_GENERATED";
 
 export interface Option {
   id: string;
@@ -112,7 +112,7 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
     errors.questionTitle = "Question title is required";
   }
 
-  if (data.marks === undefined || data.marks < 0) {
+  if (data.marks === undefined || data.marks <= 0) {
     errors.marks = "Marks must be a positive number";
   }
 
@@ -129,7 +129,7 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
   }
 
   // Validate options for option_based questions
-  if (data.questionType === "option_based" && data.options) {
+  if ((data.questionType === "SINGLE_CORRECT_MCQ" || data.questionType === "MULTIPLE_CORRECT_MCQ") && data.options) {
     const optionErrors: ValidationErrors[] = [];
     let hasError = false;
 
@@ -163,7 +163,7 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
   }
 
   // Validate evaluation rubric for subjective questions
-  if (data.questionType === "subjective" && data.evaluationRubric) {
+  if (data.questionType === "SUBJECTIVE" && data.evaluationRubric) {
     const rubricErrors: ValidationErrors[] = [];
     let hasError = false;
 
@@ -188,8 +188,8 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
     }
   }
 
-  // Validate matching details for matching questions
-  if (data.questionType === "matching" && data.matchingDetails) {
+  // Validate MATCHING details for MATCHING questions
+  if (data.questionType === "MATCHING" && data.matchingDetails) {
     const matchingErrors: ValidationErrors = {};
 
     // Left column validation
@@ -264,7 +264,7 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
   }
 
   // Validate year field if source is previous_year
-  if (data.source === "previous_year" && (!data.year || data.year.trim() === "")) {
+  if (data.source === "PREVIOUS_YEAR" && (!data.year || data.year.trim() === "")) {
     errors.year = "Year is required for previous year questions";
   }
 
