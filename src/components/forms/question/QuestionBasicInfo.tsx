@@ -9,7 +9,7 @@ import { FormData, Question, ValidationErrors, getErrorMessage } from "./types";
 
 interface QuestionBasicInfoProps {
   form: UseFormReturn<FormData>;
-  watchSource: "previous_year" | "ai_generated" | "user_generated";
+  watchSource: "PREVIOUS_YEAR" | "AI_GENERATED" | "USER_GENERATED";
   availableQuestions: Question[];
   errors: ValidationErrors;
 }
@@ -131,9 +131,9 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="hard">Hard</SelectItem>
+                  <SelectItem value="EASY">EASY</SelectItem>
+                  <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                  <SelectItem value="HARD">HARD</SelectItem>
                 </SelectContent>
               </Select>
               {getErrorMessage(errors, "difficulty") && (
@@ -160,10 +160,11 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="option_based">Multiple Choice</SelectItem>
-                  <SelectItem value="subjective">Subjective</SelectItem>
-                  <SelectItem value="passage">Passage</SelectItem>
-                  <SelectItem value="matching">Matching</SelectItem>
+                  <SelectItem value="SINGLE_CORRECT_MCQ">SINGLE CORRECT MCQ</SelectItem>
+                  <SelectItem value="MULTIPLE_CORRECT_MCQ">MULTIPLE CORRECT MCQ</SelectItem>
+                  <SelectItem value="SUBJECTIVE">SUBJECTIVE</SelectItem>
+                  <SelectItem value="PASSAGE">PASSAGE</SelectItem>
+                  <SelectItem value="MATCHING">MATCHING</SelectItem>
                 </SelectContent>
               </Select>
               {getErrorMessage(errors, "questionType") && (
@@ -190,9 +191,9 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="previous_year">Previous Year</SelectItem>
-                  <SelectItem value="ai_generated">AI Generated</SelectItem>
-                  <SelectItem value="user_generated">User Generated</SelectItem>
+                  <SelectItem value="PREVIOUS_YEAR">Previous Year</SelectItem>
+                  <SelectItem value="AI_GENERATED">AI Generated</SelectItem>
+                  <SelectItem value="USER_GENERATED">User Generated</SelectItem>
                 </SelectContent>
               </Select>
               {getErrorMessage(errors, "source") && (
@@ -203,7 +204,7 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
         />
 
         {/* Year (conditional based on source) */}
-        {watchSource === "previous_year" && (
+        {watchSource === "PREVIOUS_YEAR" && (
           <Controller
             control={form.control}
             name="year"
