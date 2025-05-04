@@ -103,11 +103,26 @@ export interface ValidationErrors {
 export function validateFormData(data: Partial<FormData>): ValidationErrors {
   const errors: ValidationErrors = {};
 
-  // Required fields
+  // Required fields for all question types
   if (!data.id || data.id.trim() === "") {
     errors.id = "Question ID is required";
   }
 
+  if (!data.source) {
+    errors.source = "Source is required";
+  }
+
+  // Validate year field if source is previous_year
+  if (data.source === "PREVIOUS_YEAR" && (!data.year || data.year.trim() === "")) {
+    errors.year = "Year is required for previous year questions";
+  }
+
+  // If hasChild is true, we only validate the basic fields
+  if (data.hasChild) {
+    return errors;
+  }
+
+  // Additional validation for non-parent questions
   if (!data.questionTitle || data.questionTitle.trim() === "") {
     errors.questionTitle = "Question title is required";
   }
@@ -122,10 +137,6 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
 
   if (!data.questionType) {
     errors.questionType = "Question type is required";
-  }
-
-  if (!data.source) {
-    errors.source = "Source is required";
   }
 
   // Validate options for option_based questions
@@ -263,11 +274,6 @@ export function validateFormData(data: Partial<FormData>): ValidationErrors {
     }
   }
 
-  // Validate year field if source is previous_year
-  if (data.source === "PREVIOUS_YEAR" && (!data.year || data.year.trim() === "")) {
-    errors.year = "Year is required for previous year questions";
-  }
-
   // Validate syllabus mapping
   if (data.syllabusMapping) {
     const syllabusErrors: ValidationErrors = {};
@@ -326,4 +332,24 @@ export function getErrorMessage(errors: ValidationErrors | undefined, path: stri
   }
   
   return typeof current === 'string' ? current : undefined;
+}
+
+// Helper function to safely access nested errors 
+export function getNestedError(errors: ValidationErrors | undefined, path: string): ValidationErrors | string | Array<ValidationErrors | string> | undefined {
+  if (!errors) return undefined;
+  
+  const pathParts = path.split('.');
+  let current: any = errors;
+  
+  for (const part of pathParts) {
+    if (!current || current[part] === undefined) return undefined;
+    current = current[part];
+  }
+  
+  return current;
+}
+
+// Helper function to check if error is an object with specific property
+export function hasProperty(obj: any, prop: string): boolean {
+  return obj && typeof obj === 'object' && prop in obj;
 }

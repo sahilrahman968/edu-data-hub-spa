@@ -10,11 +10,12 @@ import { FormData, Question, ValidationErrors, getErrorMessage } from "./types";
 interface QuestionBasicInfoProps {
   form: UseFormReturn<FormData>;
   watchSource: "PREVIOUS_YEAR" | "AI_GENERATED" | "USER_GENERATED";
+  watchHasChild: boolean;
   availableQuestions: Question[];
   errors: ValidationErrors;
 }
 
-export default function QuestionBasicInfo({ form, watchSource, availableQuestions, errors }: QuestionBasicInfoProps) {
+export default function QuestionBasicInfo({ form, watchSource, watchHasChild, availableQuestions, errors }: QuestionBasicInfoProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Basic Information</h3>
@@ -92,88 +93,6 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
           )}
         />
 
-        {/* Marks */}
-        <Controller
-          control={form.control}
-          name="marks"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Marks*</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  min="0" 
-                  {...field} 
-                  onChange={(e) => field.onChange(parseInt(e.target.value))} 
-                />
-              </FormControl>
-              {getErrorMessage(errors, "marks") && (
-                <FormMessage>{getErrorMessage(errors, "marks")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
-        {/* Difficulty */}
-        <Controller
-          control={form.control}
-          name="difficulty"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Difficulty*</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select difficulty level" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="EASY">EASY</SelectItem>
-                  <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-                  <SelectItem value="HARD">HARD</SelectItem>
-                </SelectContent>
-              </Select>
-              {getErrorMessage(errors, "difficulty") && (
-                <FormMessage>{getErrorMessage(errors, "difficulty")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
-        {/* Question Type */}
-        <Controller
-          control={form.control}
-          name="questionType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Question Type*</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select question type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="SINGLE_CORRECT_MCQ">SINGLE CORRECT MCQ</SelectItem>
-                  <SelectItem value="MULTIPLE_CORRECT_MCQ">MULTIPLE CORRECT MCQ</SelectItem>
-                  <SelectItem value="SUBJECTIVE">SUBJECTIVE</SelectItem>
-                  <SelectItem value="PASSAGE">PASSAGE</SelectItem>
-                  <SelectItem value="MATCHING">MATCHING</SelectItem>
-                </SelectContent>
-              </Select>
-              {getErrorMessage(errors, "questionType") && (
-                <FormMessage>{getErrorMessage(errors, "questionType")}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-
         {/* Source */}
         <Controller
           control={form.control}
@@ -221,49 +140,141 @@ export default function QuestionBasicInfo({ form, watchSource, availableQuestion
             )}
           />
         )}
+
+        {/* Only show these fields if hasChild is false */}
+        {!watchHasChild && (
+          <>
+            {/* Marks */}
+            <Controller
+              control={form.control}
+              name="marks"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Marks*</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      {...field} 
+                      onChange={(e) => field.onChange(parseInt(e.target.value))} 
+                    />
+                  </FormControl>
+                  {getErrorMessage(errors, "marks") && (
+                    <FormMessage>{getErrorMessage(errors, "marks")}</FormMessage>
+                  )}
+                </FormItem>
+              )}
+            />
+
+            {/* Difficulty */}
+            <Controller
+              control={form.control}
+              name="difficulty"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Difficulty*</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select difficulty level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="EASY">EASY</SelectItem>
+                      <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                      <SelectItem value="HARD">HARD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {getErrorMessage(errors, "difficulty") && (
+                    <FormMessage>{getErrorMessage(errors, "difficulty")}</FormMessage>
+                  )}
+                </FormItem>
+              )}
+            />
+
+            {/* Question Type */}
+            <Controller
+              control={form.control}
+              name="questionType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Question Type*</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select question type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="SINGLE_CORRECT_MCQ">SINGLE CORRECT MCQ</SelectItem>
+                      <SelectItem value="MULTIPLE_CORRECT_MCQ">MULTIPLE CORRECT MCQ</SelectItem>
+                      <SelectItem value="SUBJECTIVE">SUBJECTIVE</SelectItem>
+                      <SelectItem value="PASSAGE">PASSAGE</SelectItem>
+                      <SelectItem value="MATCHING">MATCHING</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {getErrorMessage(errors, "questionType") && (
+                    <FormMessage>{getErrorMessage(errors, "questionType")}</FormMessage>
+                  )}
+                </FormItem>
+              )}
+            />
+          </>
+        )}
       </div>
 
-      {/* Question Title */}
-      <Controller
-        control={form.control}
-        name="questionTitle"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Question Title*</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Enter question text"
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            {getErrorMessage(errors, "questionTitle") && (
-              <FormMessage>{getErrorMessage(errors, "questionTitle")}</FormMessage>
+      {/* Only show Question Title and Markup if hasChild is false */}
+      {!watchHasChild && (
+        <>
+          {/* Question Title */}
+          <Controller
+            control={form.control}
+            name="questionTitle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Question Title*</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter question text"
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                {getErrorMessage(errors, "questionTitle") && (
+                  <FormMessage>{getErrorMessage(errors, "questionTitle")}</FormMessage>
+                )}
+              </FormItem>
             )}
-          </FormItem>
-        )}
-      />
+          />
 
-      {/* Markup Question Title (optional) */}
-      <Controller
-        control={form.control}
-        name="markupQuestionTitle"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Markup Question Title (HTML)</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Enter HTML markup for the question (optional)"
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            {getErrorMessage(errors, "markupQuestionTitle") && (
-              <FormMessage>{getErrorMessage(errors, "markupQuestionTitle")}</FormMessage>
+          {/* Markup Question Title (optional) */}
+          <Controller
+            control={form.control}
+            name="markupQuestionTitle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Markup Question Title (HTML)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter HTML markup for the question (optional)"
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                {getErrorMessage(errors, "markupQuestionTitle") && (
+                  <FormMessage>{getErrorMessage(errors, "markupQuestionTitle")}</FormMessage>
+                )}
+              </FormItem>
             )}
-          </FormItem>
-        )}
-      />
+          />
+        </>
+      )}
     </div>
   );
 }

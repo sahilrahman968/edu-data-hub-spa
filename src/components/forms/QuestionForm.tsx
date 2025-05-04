@@ -95,6 +95,7 @@ export default function QuestionForm() {
 
   const watchQuestionType = form.watch("questionType");
   const watchSource = form.watch("source");
+  const watchHasChild = form.watch("hasChild");
 
   // Fetch data using React Query
   const { data: boards = [] } = useQuery({
@@ -245,24 +246,19 @@ export default function QuestionForm() {
     }
   }, [watchSource, validationErrors]);
 
+  // Reset errors when hasChild changes
+  useEffect(() => {
+    if (watchHasChild) {
+      // For parent questions, we only need id, source and source-dependent fields
+      setValidationErrors({});
+    }
+  }, [watchHasChild]);
+
   const onSubmit = async (data: FormData) => {
     console.log("Form submitted with data:", data);
     
     // Custom validation
     const errors = validateFormData(data);
-    
-    // Don't validate fields that aren't relevant to the current question type
-    if (data.questionType !== 'SUBJECTIVE' && errors.evaluationRubric) {
-      delete errors.evaluationRubric;
-    }
-    
-    if (data.questionType !== 'MATCHING' && errors.matchingDetails) {
-      delete errors.matchingDetails;
-    }
-    
-    if (data.source !== 'PREVIOUS_YEAR' && errors.year) {
-      delete errors.year;
-    }
     
     setValidationErrors(errors);
     
@@ -280,35 +276,41 @@ export default function QuestionForm() {
       id: data.id,
       parentId: data.parentId || null,
       hasChild: data.hasChild,
-      questionTitle: data.questionTitle,
-      markupQuestionTitle: data.markupQuestionTitle || data.questionTitle,
-      marks: data.marks,
-      difficulty: data.difficulty,
-      questionType: [data.questionType], // API expects array
       source: data.source,
       createdBy: data.createdBy,
-      syllabusMapping: data.syllabusMapping,
     };
 
-    // Add year field only if it's a previous year question
-    if (data.source === "previous_year") {
-      questionPayload.year = data.year;
-    }
-
-    // Add question type specific fields
-    if ((data.questionType === "MULTIPLE_CORRECT_MCQ" || data.questionType === "SINGLE_CORRECT_MCQ") && data.options) {
-      questionPayload.options = data.options;
-    } else if (data.questionType === "SUBJECTIVE" && data.evaluationRubric) {
-      questionPayload.evaluationRubric = data.evaluationRubric;
-    } else if (data.questionType === "PASSAGE" && data.passageDetails) {
-      questionPayload.passageDetails = data.passageDetails;
-    } else if (data.questionType === "MATCHING") {
-      // For MATCHING questions, get the values from our state
-      questionPayload.matchingDetails = {
-        leftColumn: data.matchingDetails?.leftColumn.filter(item => item.trim() !== '') || [],
-        rightColumn: data.matchingDetails?.rightColumn.filter(item => item.trim() !== '') || [],
-        correctMatches: data.matchingDetails?.correctMatches || []
+    // Add fields only if this is not a parent question
+    if (!data.hasChild) {
+      questionPayload = {
+        ...questionPayload,
+        questionTitle: data.questionTitle,
+        markupQuestionTitle: data.markupQuestionTitle || data.questionTitle,
+        marks: data.marks,
+        difficulty: data.difficulty,
+        questionType: [data.questionType], // API expects array
+        syllabusMapping: data.syllabusMapping,
       };
+
+      // Add question type specific fields
+      if ((data.questionType === "MULTIPLE_CORRECT_MCQ" || data.questionType === "SINGLE_CORRECT_MCQ") && data.options) {
+        questionPayload.options = data.options;
+      } else if (data.questionType === "SUBJECTIVE" && data.evaluationRubric) {
+        questionPayload.evaluationRubric = data.evaluationRubric;
+      } else if (data.questionType === "PASSAGE" && data.passageDetails) {
+        questionPayload.passageDetails = data.passageDetails;
+      } else if (data.questionType === "MATCHING" && data.matchingDetails) {
+        questionPayload.matchingDetails = {
+          leftColumn: data.matchingDetails.leftColumn.filter(item => item.trim() !== '') || [],
+          rightColumn: data.matchingDetails.rightColumn.filter(item => item.trim() !== '') || [],
+          correctMatches: data.matchingDetails.correctMatches || []
+        };
+      }
+    }
+    
+    // Add year field only if it's a previous year question
+    if (data.source === "PREVIOUS_YEAR") {
+      questionPayload.year = data.year;
     }
 
     // Add child IDs if specified
@@ -359,59 +361,65 @@ export default function QuestionForm() {
             {/* Basic Question Information */}
             <QuestionBasicInfo 
               form={form} 
-              watchSource={watchSource} 
+              watchSource={watchSource}
+              watchHasChild={watchHasChild}
               availableQuestions={availableQuestions as Question[]}
               errors={validationErrors}
             />
 
-            {/* Question Type Specific Fields */}
-            {(watchQuestionType === "SINGLE_CORRECT_MCQ" || watchQuestionType === "MULTIPLE_CORRECT_MCQ") && (
-              <OptionBasedQuestion 
-                form={form} 
-                errors={validationErrors}
-              />
-            )}
+            {/* Only show these fields if hasChild is false */}
+            {!watchHasChild && (
+              <>
+                {/* Question Type Specific Fields */}
+                {(watchQuestionType === "SINGLE_CORRECT_MCQ" || watchQuestionType === "MULTIPLE_CORRECT_MCQ") && (
+                  <OptionBasedQuestion 
+                    form={form} 
+                    errors={validationErrors}
+                  />
+                )}
 
-            {watchQuestionType === "SUBJECTIVE" && (
-              <SubjectiveQuestion 
-                form={form} 
-                errors={validationErrors}
-              />
-            )}
+                {watchQuestionType === "SUBJECTIVE" && (
+                  <SubjectiveQuestion 
+                    form={form} 
+                    errors={validationErrors}
+                  />
+                )}
 
-            {watchQuestionType === "PASSAGE" && (
-              <PassageQuestion 
-                form={form} 
-                errors={validationErrors}
-              />
-            )}
+                {watchQuestionType === "PASSAGE" && (
+                  <PassageQuestion 
+                    form={form} 
+                    errors={validationErrors}
+                  />
+                )}
 
-            {watchQuestionType === "MATCHING" && (
-              <MatchingQuestion 
-                form={form} 
-                errors={validationErrors}
-              />
-            )}
+                {watchQuestionType === "MATCHING" && (
+                  <MatchingQuestion 
+                    form={form} 
+                    errors={validationErrors}
+                  />
+                )}
 
-            {/* Syllabus Mapping Section */}
-            <SyllabusMapping
-              form={form}
-              boards={boards as Board[]}
-              classes={classes as Class[]}
-              subjects={subjects as Subject[]}
-              chapters={chapters as Chapter[]}
-              topics={topics as Topic[]}
-              selectedBoardId={selectedBoardId}
-              selectedClassId={selectedClassId}
-              selectedSubjectId={selectedSubjectId}
-              selectedChapters={selectedChapters}
-              handleBoardChange={handleBoardChange}
-              handleClassChange={handleClassChange}
-              handleSubjectChange={handleSubjectChange}
-              handleChapterChange={handleChapterChange}
-              handleTopicChange={handleTopicChange}
-              errors={validationErrors}
-            />
+                {/* Syllabus Mapping Section */}
+                <SyllabusMapping
+                  form={form}
+                  boards={boards as Board[]}
+                  classes={classes as Class[]}
+                  subjects={subjects as Subject[]}
+                  chapters={chapters as Chapter[]}
+                  topics={topics as Topic[]}
+                  selectedBoardId={selectedBoardId}
+                  selectedClassId={selectedClassId}
+                  selectedSubjectId={selectedSubjectId}
+                  selectedChapters={selectedChapters}
+                  handleBoardChange={handleBoardChange}
+                  handleClassChange={handleClassChange}
+                  handleSubjectChange={handleSubjectChange}
+                  handleChapterChange={handleChapterChange}
+                  handleTopicChange={handleTopicChange}
+                  errors={validationErrors}
+                />
+              </>
+            )}
 
             {/* Form Debugging Information */}
             <div className="bg-gray-100 p-4 rounded-md">
