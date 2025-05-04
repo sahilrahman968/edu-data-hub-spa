@@ -1,9 +1,8 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
-import { FormData, Board, Class, Subject, Chapter, Topic } from "./types";
+import { FormData, Board, Class, Subject, Chapter, Topic, ValidationErrors } from "./types";
 import { Plus, Trash2 } from "lucide-react";
 
 interface SyllabusMappingProps {
@@ -22,6 +21,7 @@ interface SyllabusMappingProps {
   handleSubjectChange: (subjectId: string) => void;
   handleChapterChange: (index: number, chapterId: string) => void;
   handleTopicChange: (index: number, topicId: string) => void;
+  errors: ValidationErrors;
 }
 
 export default function SyllabusMapping({ 
@@ -39,7 +39,8 @@ export default function SyllabusMapping({
   handleClassChange,
   handleSubjectChange,
   handleChapterChange,
-  handleTopicChange
+  handleTopicChange,
+  errors
 }: SyllabusMappingProps) {
   
   const chaptersArray = useFieldArray({

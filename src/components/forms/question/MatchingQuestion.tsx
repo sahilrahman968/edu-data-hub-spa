@@ -74,6 +74,23 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
     });
   }, [form, leftColumnItems, rightColumnItems]);
 
+  // Helper function to safely check for nested error objects
+  const hasNestedErrors = (obj: any, path: string[]): boolean => {
+    if (!obj) return false;
+    let current = obj;
+    for (const key of path) {
+      if (typeof current !== 'object' || current === null) return false;
+      if (!(key in current)) return false;
+      current = current[key];
+    }
+    return true;
+  };
+  
+  // Helper function to get error at specific index
+  const getIndexedError = (errorObj: any, index: number): any => {
+    return Array.isArray(errorObj) && index < errorObj.length ? errorObj[index] : undefined;
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-4">
@@ -99,11 +116,10 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
                   onChange={(e) => updateLeftColumnItem(index, e.target.value)} 
                 />
               </FormControl>
-              {errors.matchingDetails && 
-               errors.matchingDetails.leftColumn && 
-               Array.isArray(errors.matchingDetails.leftColumn) && 
-               errors.matchingDetails.leftColumn[index] && (
-                <FormMessage>{errors.matchingDetails.leftColumn[index] as string}</FormMessage>
+              {hasNestedErrors(errors, ['matchingDetails', 'leftColumn']) && 
+               Array.isArray(errors.matchingDetails?.leftColumn) && 
+               getIndexedError(errors.matchingDetails.leftColumn, index) && (
+                <FormMessage>{getIndexedError(errors.matchingDetails.leftColumn, index) as string}</FormMessage>
               )}
             </FormItem>
 
@@ -120,10 +136,9 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
         ))}
         
         {/* General error for left column */}
-        {errors.matchingDetails && 
-         errors.matchingDetails.leftColumn && 
-         typeof errors.matchingDetails.leftColumn === 'string' && (
-          <FormMessage>{errors.matchingDetails.leftColumn}</FormMessage>
+        {hasNestedErrors(errors, ['matchingDetails', 'leftColumn']) && 
+         typeof errors.matchingDetails?.leftColumn === 'string' && (
+          <FormMessage>{errors.matchingDetails.leftColumn as string}</FormMessage>
         )}
       </div>
 
@@ -150,11 +165,10 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
                   onChange={(e) => updateRightColumnItem(index, e.target.value)}
                 />
               </FormControl>
-              {errors.matchingDetails && 
-               errors.matchingDetails.rightColumn && 
-               Array.isArray(errors.matchingDetails.rightColumn) && 
-               errors.matchingDetails.rightColumn[index] && (
-                <FormMessage>{errors.matchingDetails.rightColumn[index] as string}</FormMessage>
+              {hasNestedErrors(errors, ['matchingDetails', 'rightColumn']) && 
+               Array.isArray(errors.matchingDetails?.rightColumn) && 
+               getIndexedError(errors.matchingDetails.rightColumn, index) && (
+                <FormMessage>{getIndexedError(errors.matchingDetails.rightColumn, index) as string}</FormMessage>
               )}
             </FormItem>
 
@@ -171,10 +185,9 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
         ))}
         
         {/* General error for right column */}
-        {errors.matchingDetails && 
-         errors.matchingDetails.rightColumn && 
-         typeof errors.matchingDetails.rightColumn === 'string' && (
-          <FormMessage>{errors.matchingDetails.rightColumn}</FormMessage>
+        {hasNestedErrors(errors, ['matchingDetails', 'rightColumn']) && 
+         typeof errors.matchingDetails?.rightColumn === 'string' && (
+          <FormMessage>{errors.matchingDetails.rightColumn as string}</FormMessage>
         )}
       </div>
 
@@ -217,13 +230,13 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.matchingDetails && 
-                     errors.matchingDetails.correctMatches && 
-                     Array.isArray(errors.matchingDetails.correctMatches) && 
-                     errors.matchingDetails.correctMatches[index] && 
-                     (errors.matchingDetails.correctMatches[index] as ValidationErrors).from && (
+                    {hasNestedErrors(errors, ['matchingDetails', 'correctMatches']) && 
+                     Array.isArray(errors.matchingDetails?.correctMatches) && 
+                     getIndexedError(errors.matchingDetails.correctMatches, index) && 
+                     typeof getIndexedError(errors.matchingDetails.correctMatches, index) === 'object' &&
+                     (getIndexedError(errors.matchingDetails.correctMatches, index) as ValidationErrors).from && (
                       <FormMessage>
-                        {(errors.matchingDetails.correctMatches[index] as ValidationErrors).from as string}
+                        {(getIndexedError(errors.matchingDetails.correctMatches, index) as ValidationErrors).from as string}
                       </FormMessage>
                     )}
                   </FormItem>
@@ -255,13 +268,13 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.matchingDetails && 
-                     errors.matchingDetails.correctMatches && 
-                     Array.isArray(errors.matchingDetails.correctMatches) && 
-                     errors.matchingDetails.correctMatches[index] && 
-                     (errors.matchingDetails.correctMatches[index] as ValidationErrors).to && (
+                    {hasNestedErrors(errors, ['matchingDetails', 'correctMatches']) && 
+                     Array.isArray(errors.matchingDetails?.correctMatches) && 
+                     getIndexedError(errors.matchingDetails.correctMatches, index) && 
+                     typeof getIndexedError(errors.matchingDetails.correctMatches, index) === 'object' &&
+                     (getIndexedError(errors.matchingDetails.correctMatches, index) as ValidationErrors).to && (
                       <FormMessage>
-                        {(errors.matchingDetails.correctMatches[index] as ValidationErrors).to as string}
+                        {(getIndexedError(errors.matchingDetails.correctMatches, index) as ValidationErrors).to as string}
                       </FormMessage>
                     )}
                   </FormItem>
@@ -285,10 +298,9 @@ export default function MatchingQuestion({ form, errors }: MatchingQuestionProps
         ))}
         
         {/* General error for correct matches */}
-        {errors.matchingDetails && 
-         errors.matchingDetails.correctMatches && 
-         typeof errors.matchingDetails.correctMatches === 'string' && (
-          <FormMessage>{errors.matchingDetails.correctMatches}</FormMessage>
+        {hasNestedErrors(errors, ['matchingDetails', 'correctMatches']) && 
+         typeof errors.matchingDetails?.correctMatches === 'string' && (
+          <FormMessage>{errors.matchingDetails.correctMatches as string}</FormMessage>
         )}
       </div>
     </div>

@@ -96,7 +96,7 @@ export interface FormData {
 }
 
 export interface ValidationErrors {
-  [key: string]: string | ValidationErrors | Array<ValidationErrors>;
+  [key: string]: string | ValidationErrors | Array<ValidationErrors | string>;
 }
 
 // Custom validation function for the form data
