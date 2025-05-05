@@ -1,3 +1,4 @@
+
 // Define interfaces for our data types
 export interface Board {
   id: string;
@@ -348,7 +349,7 @@ export function getNestedError(errors: ValidationErrors | undefined, path: strin
   return current;
 }
 
-// Fixed: Helper function to safely access nested object properties with type checking
+// Helper function to safely access nested object properties with type checking
 export function getMatchingDetailsErrors(errors: ValidationErrors | undefined, path: string): ValidationErrors | undefined {
   const nestedError = getNestedError(errors, path);
   if (nestedError && typeof nestedError === 'object' && !Array.isArray(nestedError)) {

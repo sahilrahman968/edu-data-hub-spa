@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/sonner";
 
 const BASE_URL = "http://localhost:3001";
@@ -207,7 +208,7 @@ export const getQuestions = async (params = {}): Promise<any[]> => {
 
 export const createQuestion = async (questionData: any): Promise<ApiResponse> => {
   try {
-    // Format the payload correctly - source should be an array
+    // Format the payload correctly - both source and questionType should be arrays
     let formattedData = { ...questionData };
     
     // Convert source to array format if it's a string
