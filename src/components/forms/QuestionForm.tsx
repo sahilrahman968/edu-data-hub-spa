@@ -8,7 +8,6 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Plus, Check } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 
 // Import types
@@ -366,12 +365,26 @@ export default function QuestionForm() {
       return;
     }
     
-    // Add child question to the list
-    setChildQuestions([...childQuestions, childData]);
-    toast.success("Child question added");
-    
-    // Reset form for next child question
-    resetFormForChildQuestion();
+    setIsLoading(true);
+    try {
+      // Create child question in API
+      await api.createQuestion({
+        ...childData,
+        parentId: parentQuestion?.id
+      });
+      
+      // Add child question to the list
+      setChildQuestions([...childQuestions, childData]);
+      toast.success("Child question added");
+      
+      // Reset form for next child question
+      resetFormForChildQuestion();
+    } catch (error) {
+      console.error("Failed to create child question:", error);
+      toast.error("Failed to create child question");
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleCreateParent = async () => {
@@ -417,40 +430,11 @@ export default function QuestionForm() {
     }
   };
   
-  const handleSubmitAllChildQuestions = async () => {
-    setIsLoading(true);
-    try {
-      // Submit all child questions
-      for (const childQuestion of childQuestions) {
-        await api.createQuestion({
-          ...childQuestion,
-          parentId: parentQuestion?.id
-        });
-      }
-      
-      toast.success(`${childQuestions.length} child questions created successfully`);
-      
-      // Update parent question with child IDs
-      if (parentQuestion) {
-        await api.createQuestion({
-          id: parentQuestion.id,
-          childIds: childQuestions.map(q => q.id),
-          hasChild: true,
-          source: parentQuestion.source,
-          year: parentQuestion.year,
-          createdBy: parentQuestion.createdBy
-        });
-      }
-      
-      // Reset form completely
-      resetEntireForm();
-      queryClient.invalidateQueries({ queryKey: ["questions"] });
-    } catch (error) {
-      console.error("Failed to submit child questions:", error);
-      toast.error("Failed to submit child questions");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleDoneWithChildQuestions = () => {
+    // Reset the form completely to start fresh
+    resetEntireForm();
+    queryClient.invalidateQueries({ queryKey: ["questions"] });
+    toast.success("Question creation completed");
   };
 
   const onSubmit = async (data: FormData) => {
@@ -676,6 +660,7 @@ export default function QuestionForm() {
                       errors={validationErrors}
                       isChildQuestion={true}
                       questionMode={questionMode} // Pass the questionMode
+                      parentQuestion={parentQuestion} // Pass parent question for inheritance
                     />
                     
                     {/* Question Type Specific Fields */}
@@ -753,7 +738,7 @@ export default function QuestionForm() {
                         className="flex items-center gap-2"
                       >
                         <Plus size={18} />
-                        Add Child Question
+                        Add Question
                       </Button>
                       
                       <Button 
@@ -762,17 +747,16 @@ export default function QuestionForm() {
                         onClick={resetFormForChildQuestion} 
                         disabled={isLoading}
                       >
-                        Reset Child Form
+                        Reset Form
                       </Button>
                       
                       <Button 
                         type="button" 
-                        onClick={handleSubmitAllChildQuestions} 
-                        disabled={isLoading || childQuestions.length === 0}
+                        onClick={handleDoneWithChildQuestions} 
                         className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
                       >
                         <Check size={18} />
-                        Submit All Child Questions
+                        Done
                       </Button>
                     </div>
                   </>

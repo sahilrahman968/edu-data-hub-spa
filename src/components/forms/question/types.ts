@@ -349,6 +349,15 @@ export function getNestedError(errors: ValidationErrors | undefined, path: strin
   return current;
 }
 
+// Helper function to safely access nested object properties with type checking
+export function getMatchingDetailsErrors(errors: ValidationErrors | undefined, path: string): ValidationErrors | undefined {
+  const nestedError = getNestedError(errors, path);
+  if (nestedError && typeof nestedError === 'object' && !Array.isArray(nestedError)) {
+    return nestedError as ValidationErrors;
+  }
+  return undefined;
+}
+
 // Helper function to check if an error object has a specific property
 export function hasProperty(obj: any, prop: string): boolean {
   return obj && typeof obj === 'object' && prop in obj;

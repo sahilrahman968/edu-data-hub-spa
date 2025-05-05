@@ -15,6 +15,7 @@ interface QuestionBasicInfoProps {
   errors: ValidationErrors;
   isChildQuestion?: boolean;
   questionMode?: "standard" | "parent-child"; // Add questionMode prop
+  parentQuestion?: FormData | null;
 }
 
 export default function QuestionBasicInfo({ 
@@ -24,7 +25,8 @@ export default function QuestionBasicInfo({
   availableQuestions, 
   errors,
   isChildQuestion = false,
-  questionMode = "standard" // Default to standard mode
+  questionMode = "standard", // Default to standard mode
+  parentQuestion = null
 }: QuestionBasicInfoProps) {
   return (
     <div className="space-y-4">
@@ -76,6 +78,22 @@ export default function QuestionBasicInfo({
                 {getErrorMessage(errors, "parentId") && (
                   <FormMessage>{getErrorMessage(errors, "parentId")}</FormMessage>
                 )}
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Parent Question ID - Only show for child questions (disabled and prefilled) */}
+        {isChildQuestion && parentQuestion && (
+          <Controller
+            control={form.control}
+            name="parentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parent Question ID</FormLabel>
+                <FormControl>
+                  <Input value={field.value || ""} disabled />
+                </FormControl>
               </FormItem>
             )}
           />
@@ -138,6 +156,22 @@ export default function QuestionBasicInfo({
           />
         )}
 
+        {/* Source - Show readonly for child questions */}
+        {isChildQuestion && parentQuestion && (
+          <Controller
+            control={form.control}
+            name="source"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Source* (inherited)</FormLabel>
+                <FormControl>
+                  <Input value={field.value} disabled />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+
         {/* Year (conditional based on source) - Only show if not in child question mode */}
         {!isChildQuestion && watchSource === "PREVIOUS_YEAR" && (
           <Controller
@@ -152,6 +186,22 @@ export default function QuestionBasicInfo({
                 {getErrorMessage(errors, "year") && (
                   <FormMessage>{getErrorMessage(errors, "year")}</FormMessage>
                 )}
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Year - Show readonly for child questions when parent has PREVIOUS_YEAR source */}
+        {isChildQuestion && parentQuestion && parentQuestion.source === "PREVIOUS_YEAR" && (
+          <Controller
+            control={form.control}
+            name="year"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Year* (inherited)</FormLabel>
+                <FormControl>
+                  <Input value={field.value} disabled />
+                </FormControl>
               </FormItem>
             )}
           />
