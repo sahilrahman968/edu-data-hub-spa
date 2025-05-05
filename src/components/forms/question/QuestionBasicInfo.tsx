@@ -14,7 +14,7 @@ interface QuestionBasicInfoProps {
   availableQuestions: Question[];
   errors: ValidationErrors;
   isChildQuestion?: boolean;
-  questionMode?: "standard" | "parent-child"; // Add questionMode prop
+  questionMode?: "standard" | "parent-child"; 
   parentQuestion?: FormData | null;
 }
 
@@ -25,7 +25,7 @@ export default function QuestionBasicInfo({
   availableQuestions, 
   errors,
   isChildQuestion = false,
-  questionMode = "standard", // Default to standard mode
+  questionMode = "standard",
   parentQuestion = null
 }: QuestionBasicInfoProps) {
   return (
@@ -83,7 +83,7 @@ export default function QuestionBasicInfo({
           />
         )}
 
-        {/* Parent Question ID - Only show for child questions (disabled and prefilled) */}
+        {/* Parent Question ID - Only show for child questions (disabled but with visible value) */}
         {isChildQuestion && parentQuestion && (
           <Controller
             control={form.control}
@@ -92,15 +92,19 @@ export default function QuestionBasicInfo({
               <FormItem>
                 <FormLabel>Parent Question ID</FormLabel>
                 <FormControl>
-                  <Input value={field.value || ""} disabled />
+                  <Input 
+                    value={field.value || ""} 
+                    disabled 
+                    className="bg-gray-100" // Added background color to make the value more visible
+                  />
                 </FormControl>
               </FormItem>
             )}
           />
         )}
 
-        {/* Has Child - Only show in parent-child mode */}
-        {questionMode === "parent-child" && !isChildQuestion && (
+        {/* Has Child - Show in parent-child mode AND for child questions (but disabled for child) */}
+        {questionMode === "parent-child" && (
           <Controller
             control={form.control}
             name="hasChild"
@@ -110,11 +114,13 @@ export default function QuestionBasicInfo({
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
+                    disabled={isChildQuestion} // Disable checkbox for child questions
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
                   <FormLabel>
                     Has Child Questions
+                    {isChildQuestion && <span className="ml-2 text-gray-500 text-sm">(Disabled for child questions)</span>}
                   </FormLabel>
                 </div>
                 {getErrorMessage(errors, "hasChild") && (
@@ -156,7 +162,7 @@ export default function QuestionBasicInfo({
           />
         )}
 
-        {/* Source - Show readonly for child questions */}
+        {/* Source - Show readonly for child questions with improved visibility */}
         {isChildQuestion && parentQuestion && (
           <Controller
             control={form.control}
@@ -165,7 +171,11 @@ export default function QuestionBasicInfo({
               <FormItem>
                 <FormLabel>Source* (inherited)</FormLabel>
                 <FormControl>
-                  <Input value={field.value} disabled />
+                  <Input 
+                    value={field.value} 
+                    disabled 
+                    className="bg-gray-100" // Added background color to make the value more visible
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -191,7 +201,7 @@ export default function QuestionBasicInfo({
           />
         )}
 
-        {/* Year - Show readonly for child questions when parent has PREVIOUS_YEAR source */}
+        {/* Year - Show readonly for child questions when parent has PREVIOUS_YEAR source with improved visibility */}
         {isChildQuestion && parentQuestion && parentQuestion.source === "PREVIOUS_YEAR" && (
           <Controller
             control={form.control}
@@ -200,7 +210,11 @@ export default function QuestionBasicInfo({
               <FormItem>
                 <FormLabel>Year* (inherited)</FormLabel>
                 <FormControl>
-                  <Input value={field.value} disabled />
+                  <Input 
+                    value={field.value} 
+                    disabled 
+                    className="bg-gray-100" // Added background color to make the value more visible
+                  />
                 </FormControl>
               </FormItem>
             )}

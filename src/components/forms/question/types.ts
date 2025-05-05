@@ -1,4 +1,3 @@
-
 // Define interfaces for our data types
 export interface Board {
   id: string;
@@ -349,13 +348,44 @@ export function getNestedError(errors: ValidationErrors | undefined, path: strin
   return current;
 }
 
-// Helper function to safely access nested object properties with type checking
+// Fixed: Helper function to safely access nested object properties with type checking
 export function getMatchingDetailsErrors(errors: ValidationErrors | undefined, path: string): ValidationErrors | undefined {
   const nestedError = getNestedError(errors, path);
   if (nestedError && typeof nestedError === 'object' && !Array.isArray(nestedError)) {
     return nestedError as ValidationErrors;
   }
   return undefined;
+}
+
+// Helper functions for checking specific error types
+export function hasLeftColumnError(errors: ValidationErrors | undefined): boolean {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return !!(matchingErrors && matchingErrors.leftColumn);
+}
+
+export function hasRightColumnError(errors: ValidationErrors | undefined): boolean {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return !!(matchingErrors && matchingErrors.rightColumn);
+}
+
+export function hasCorrectMatchesError(errors: ValidationErrors | undefined): boolean {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return !!(matchingErrors && matchingErrors.correctMatches);
+}
+
+export function getLeftColumnErrors(errors: ValidationErrors | undefined): ValidationErrors | string | Array<ValidationErrors | string> | undefined {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return matchingErrors ? matchingErrors.leftColumn : undefined;
+}
+
+export function getRightColumnErrors(errors: ValidationErrors | undefined): ValidationErrors | string | Array<ValidationErrors | string> | undefined {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return matchingErrors ? matchingErrors.rightColumn : undefined;
+}
+
+export function getCorrectMatchesErrors(errors: ValidationErrors | undefined): ValidationErrors | string | Array<ValidationErrors | string> | undefined {
+  const matchingErrors = getMatchingDetailsErrors(errors, 'matchingDetails');
+  return matchingErrors ? matchingErrors.correctMatches : undefined;
 }
 
 // Helper function to check if an error object has a specific property

@@ -186,7 +186,7 @@ export const createTopic = async (id: string, name: string, chapterId: string): 
   }
 };
 
-// New API functions for Questions
+// Updated API functions for Questions
 export const getQuestions = async (params = {}): Promise<any[]> => {
   try {
     const queryParams = new URLSearchParams();
@@ -207,10 +207,25 @@ export const getQuestions = async (params = {}): Promise<any[]> => {
 
 export const createQuestion = async (questionData: any): Promise<ApiResponse> => {
   try {
+    // Format the payload correctly - source should be an array
+    let formattedData = { ...questionData };
+    
+    // Convert source to array format if it's a string
+    if (formattedData.source && typeof formattedData.source === 'string') {
+      formattedData.source = [formattedData.source];
+    }
+    
+    // Convert questionType to array if it's not already
+    if (formattedData.questionType && !Array.isArray(formattedData.questionType)) {
+      formattedData.questionType = [formattedData.questionType];
+    }
+
+    console.log("Sending formatted payload to createQuestion API:", formattedData);
+    
     const response = await fetch(`${BASE_URL}/api/questions/create`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(questionData),
+      body: JSON.stringify(formattedData),
     });
     return handleResponse<ApiResponse>(response);
   } catch (error: any) {
