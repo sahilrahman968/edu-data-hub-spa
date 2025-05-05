@@ -334,7 +334,7 @@ export function getErrorMessage(errors: ValidationErrors | undefined, path: stri
   return typeof current === 'string' ? current : undefined;
 }
 
-// Helper function to safely access nested errors 
+// Helper function to safely access nested errors
 export function getNestedError(errors: ValidationErrors | undefined, path: string): ValidationErrors | string | Array<ValidationErrors | string> | undefined {
   if (!errors) return undefined;
   
@@ -349,7 +349,25 @@ export function getNestedError(errors: ValidationErrors | undefined, path: strin
   return current;
 }
 
-// Helper function to check if error is an object with specific property
+// Helper function to check if an error object has a specific property
 export function hasProperty(obj: any, prop: string): boolean {
   return obj && typeof obj === 'object' && prop in obj;
+}
+
+// Helper function to safely check if an error has a nested property
+export function hasNestedProperty(errors: ValidationErrors | undefined, path: string, prop: string): boolean {
+  const nestedError = getNestedError(errors, path);
+  if (nestedError && typeof nestedError === 'object' && !Array.isArray(nestedError)) {
+    return prop in nestedError;
+  }
+  return false;
+}
+
+// Helper function to get array errors at a specific index
+export function getArrayErrorAtIndex(errors: ValidationErrors | undefined, path: string, index: number): ValidationErrors | string | undefined {
+  const arrayErrors = getNestedError(errors, path);
+  if (Array.isArray(arrayErrors) && arrayErrors[index]) {
+    return arrayErrors[index];
+  }
+  return undefined;
 }

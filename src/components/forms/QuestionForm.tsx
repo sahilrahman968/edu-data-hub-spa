@@ -9,6 +9,8 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Plus, Check } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 
 // Import types
 import { 
@@ -43,6 +45,7 @@ export default function QuestionForm() {
   const [childQuestions, setChildQuestions] = useState<FormData[]>([]);
   const [isParentCreated, setIsParentCreated] = useState(false);
   const [parentQuestion, setParentQuestion] = useState<FormData | null>(null);
+  const [questionMode, setQuestionMode] = useState<"standard" | "parent-child">("standard");
   const [mode, setMode] = useState<"parent" | "child">("parent");
 
   // Get current user information from local storage
@@ -138,7 +141,7 @@ export default function QuestionForm() {
     form.reset({
       id: "",
       parentId: null,
-      hasChild: false,
+      hasChild: questionMode === "parent-child", // Set hasChild based on mode
       questionTitle: "",
       markupQuestionTitle: "",
       marks: 0,
@@ -173,6 +176,15 @@ export default function QuestionForm() {
     setChildQuestions([]);
     setValidationErrors({});
     setMode("parent");
+  };
+
+  // Handle mode change
+  const handleModeChange = (newMode: "standard" | "parent-child") => {
+    setQuestionMode(newMode);
+    resetEntireForm();
+    
+    // Update hasChild based on the selected mode
+    form.setValue("hasChild", newMode === "parent-child");
   };
 
   const watchQuestionType = form.watch("questionType");
@@ -336,6 +348,11 @@ export default function QuestionForm() {
     }
   }, [watchHasChild]);
 
+  // Update hasChild when questionMode changes
+  useEffect(() => {
+    form.setValue("hasChild", questionMode === "parent-child");
+  }, [questionMode, form]);
+
   const handleAddChildQuestion = async () => {
     // Validate child question
     const childData = form.getValues();
@@ -361,12 +378,6 @@ export default function QuestionForm() {
   const handleCreateParent = async () => {
     // Validate parent question
     const parentData = form.getValues();
-    
-    if (!parentData.hasChild) {
-      toast.error("Please mark the question as having child questions");
-      form.setValue("hasChild", true);
-      return;
-    }
     
     const errors = validateFormData(parentData);
     
@@ -522,71 +533,38 @@ export default function QuestionForm() {
     }
   };
 
-  // Debug submission - log form state whenever it changes
-  useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      console.log("Form changed:", name, type, value);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Create Question</CardTitle>
         <CardDescription>
-          {mode === "parent" 
-            ? "Create a parent question first" 
-            : `Creating child questions for parent: ${parentQuestion?.id}`}
+          Choose the type of question you want to create
         </CardDescription>
+        <div className="flex items-center space-x-4 pt-4">
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="mode-switch" 
+              checked={questionMode === "parent-child"}
+              onCheckedChange={(checked) => handleModeChange(checked ? "parent-child" : "standard")}
+            />
+            <label htmlFor="mode-switch" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {questionMode === "parent-child" ? "Parent-Child Question Mode" : "Standard Question Mode"}
+            </label>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Parent question creation mode */}
-            {mode === "parent" && (
+            {/* Standard Question Mode */}
+            {questionMode === "standard" && (
               <>
                 <QuestionBasicInfo 
                   form={form} 
                   watchSource={watchSource}
-                  watchHasChild={true} // Force hasChild=true for parent creation
+                  watchHasChild={false} // Force hasChild=false for standard mode
                   availableQuestions={availableQuestions as Question[]}
                   errors={validationErrors}
-                />
-                
-                <div className="flex justify-end mt-6">
-                  <Button 
-                    type="button" 
-                    onClick={handleCreateParent} 
-                    disabled={isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    Create Parent Question
-                  </Button>
-                </div>
-              </>
-            )}
-            
-            {/* Child question creation mode */}
-            {mode === "child" && (
-              <>
-                <div className="bg-slate-100 p-4 rounded-md mb-6">
-                  <h3 className="font-medium">Parent Question Information</h3>
-                  <p className="text-sm text-slate-600">ID: {parentQuestion?.id}</p>
-                  <p className="text-sm text-slate-600">Source: {parentQuestion?.source}</p>
-                  {parentQuestion?.source === "PREVIOUS_YEAR" && (
-                    <p className="text-sm text-slate-600">Year: {parentQuestion?.year}</p>
-                  )}
-                  <p className="text-sm text-slate-600">Child Questions: {childQuestions.length}</p>
-                </div>
-                
-                <QuestionBasicInfo 
-                  form={form} 
-                  watchSource={watchSource}
-                  watchHasChild={false}
-                  availableQuestions={availableQuestions as Question[]}
-                  errors={validationErrors}
-                  isChildQuestion={true}
                 />
                 
                 {/* Question Type Specific Fields */}
@@ -638,54 +616,165 @@ export default function QuestionForm() {
                   errors={validationErrors}
                 />
                 
-                {/* Child Questions List */}
-                {childQuestions.length > 0 && (
-                  <div className="bg-slate-100 p-4 rounded-md">
-                    <h3 className="font-medium mb-2">Added Child Questions</h3>
-                    <ul className="space-y-2 max-h-[200px] overflow-y-auto">
-                      {childQuestions.map((question, index) => (
-                        <li key={index} className="bg-white p-2 rounded border">
-                          <p className="font-medium">ID: {question.id}</p>
-                          <p className="text-sm text-slate-600 line-clamp-2">
-                            {question.questionTitle}
-                          </p>
-                          <p className="text-xs text-slate-500">Type: {question.questionType}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                <div className="flex flex-wrap gap-4 justify-end">
+                <div className="flex justify-end mt-6">
                   <Button 
-                    type="button" 
-                    onClick={handleAddChildQuestion} 
-                    disabled={isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus size={18} />
-                    Add Child Question
-                  </Button>
-                  
-                  <Button 
-                    type="button" 
-                    variant="secondary"
-                    onClick={resetFormForChildQuestion} 
+                    type="submit" 
                     disabled={isLoading}
                   >
-                    Reset Child Form
-                  </Button>
-                  
-                  <Button 
-                    type="button" 
-                    onClick={handleSubmitAllChildQuestions} 
-                    disabled={isLoading || childQuestions.length === 0}
-                    className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <Check size={18} />
-                    Submit All Child Questions
+                    Create Question
                   </Button>
                 </div>
+              </>
+            )}
+            
+            {/* Parent-Child Question Mode */}
+            {questionMode === "parent-child" && (
+              <>
+                {/* Parent question creation mode */}
+                {mode === "parent" && (
+                  <>
+                    <QuestionBasicInfo 
+                      form={form} 
+                      watchSource={watchSource}
+                      watchHasChild={true} // Force hasChild=true for parent creation
+                      availableQuestions={availableQuestions as Question[]}
+                      errors={validationErrors}
+                    />
+                    
+                    <div className="flex justify-end mt-6">
+                      <Button 
+                        type="button" 
+                        onClick={handleCreateParent} 
+                        disabled={isLoading}
+                        className="flex items-center gap-2"
+                      >
+                        Create Parent Question
+                      </Button>
+                    </div>
+                  </>
+                )}
+                
+                {/* Child question creation mode */}
+                {mode === "child" && (
+                  <>
+                    <div className="bg-slate-100 p-4 rounded-md mb-6">
+                      <h3 className="font-medium">Parent Question Information</h3>
+                      <p className="text-sm text-slate-600">ID: {parentQuestion?.id}</p>
+                      <p className="text-sm text-slate-600">Source: {parentQuestion?.source}</p>
+                      {parentQuestion?.source === "PREVIOUS_YEAR" && (
+                        <p className="text-sm text-slate-600">Year: {parentQuestion?.year}</p>
+                      )}
+                      <p className="text-sm text-slate-600">Child Questions: {childQuestions.length}</p>
+                    </div>
+                    
+                    <QuestionBasicInfo 
+                      form={form} 
+                      watchSource={watchSource}
+                      watchHasChild={false}
+                      availableQuestions={availableQuestions as Question[]}
+                      errors={validationErrors}
+                      isChildQuestion={true}
+                    />
+                    
+                    {/* Question Type Specific Fields */}
+                    {(watchQuestionType === "SINGLE_CORRECT_MCQ" || watchQuestionType === "MULTIPLE_CORRECT_MCQ") && (
+                      <OptionBasedQuestion 
+                        form={form} 
+                        errors={validationErrors}
+                      />
+                    )}
+
+                    {watchQuestionType === "SUBJECTIVE" && (
+                      <SubjectiveQuestion 
+                        form={form} 
+                        errors={validationErrors}
+                      />
+                    )}
+
+                    {watchQuestionType === "PASSAGE" && (
+                      <PassageQuestion 
+                        form={form} 
+                        errors={validationErrors}
+                      />
+                    )}
+
+                    {watchQuestionType === "MATCHING" && (
+                      <MatchingQuestion 
+                        form={form} 
+                        errors={validationErrors}
+                      />
+                    )}
+
+                    {/* Syllabus Mapping Section */}
+                    <SyllabusMapping
+                      form={form}
+                      boards={boards as Board[]}
+                      classes={classes as Class[]}
+                      subjects={subjects as Subject[]}
+                      chapters={chapters as Chapter[]}
+                      topics={topics as Topic[]}
+                      selectedBoardId={selectedBoardId}
+                      selectedClassId={selectedClassId}
+                      selectedSubjectId={selectedSubjectId}
+                      selectedChapters={selectedChapters}
+                      handleBoardChange={handleBoardChange}
+                      handleClassChange={handleClassChange}
+                      handleSubjectChange={handleSubjectChange}
+                      handleChapterChange={handleChapterChange}
+                      handleTopicChange={handleTopicChange}
+                      errors={validationErrors}
+                    />
+                    
+                    {/* Child Questions List */}
+                    {childQuestions.length > 0 && (
+                      <div className="bg-slate-100 p-4 rounded-md">
+                        <h3 className="font-medium mb-2">Added Child Questions</h3>
+                        <ul className="space-y-2 max-h-[200px] overflow-y-auto">
+                          {childQuestions.map((question, index) => (
+                            <li key={index} className="bg-white p-2 rounded border">
+                              <p className="font-medium">ID: {question.id}</p>
+                              <p className="text-sm text-slate-600 line-clamp-2">
+                                {question.questionTitle}
+                              </p>
+                              <p className="text-xs text-slate-500">Type: {question.questionType}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-4 justify-end">
+                      <Button 
+                        type="button" 
+                        onClick={handleAddChildQuestion} 
+                        disabled={isLoading}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus size={18} />
+                        Add Child Question
+                      </Button>
+                      
+                      <Button 
+                        type="button" 
+                        variant="secondary"
+                        onClick={resetFormForChildQuestion} 
+                        disabled={isLoading}
+                      >
+                        Reset Child Form
+                      </Button>
+                      
+                      <Button 
+                        type="button" 
+                        onClick={handleSubmitAllChildQuestions} 
+                        disabled={isLoading || childQuestions.length === 0}
+                        className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                      >
+                        <Check size={18} />
+                        Submit All Child Questions
+                      </Button>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </form>
