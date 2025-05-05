@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -565,6 +564,7 @@ export default function QuestionForm() {
                   watchHasChild={false} // Force hasChild=false for standard mode
                   availableQuestions={availableQuestions as Question[]}
                   errors={validationErrors}
+                  questionMode={questionMode} // Pass the questionMode
                 />
                 
                 {/* Question Type Specific Fields */}
@@ -639,6 +639,7 @@ export default function QuestionForm() {
                       watchHasChild={true} // Force hasChild=true for parent creation
                       availableQuestions={availableQuestions as Question[]}
                       errors={validationErrors}
+                      questionMode={questionMode} // Pass the questionMode
                     />
                     
                     <div className="flex justify-end mt-6">
@@ -674,6 +675,7 @@ export default function QuestionForm() {
                       availableQuestions={availableQuestions as Question[]}
                       errors={validationErrors}
                       isChildQuestion={true}
+                      questionMode={questionMode} // Pass the questionMode
                     />
                     
                     {/* Question Type Specific Fields */}

@@ -14,6 +14,7 @@ interface QuestionBasicInfoProps {
   availableQuestions: Question[];
   errors: ValidationErrors;
   isChildQuestion?: boolean;
+  questionMode?: "standard" | "parent-child"; // Add questionMode prop
 }
 
 export default function QuestionBasicInfo({ 
@@ -22,7 +23,8 @@ export default function QuestionBasicInfo({
   watchHasChild, 
   availableQuestions, 
   errors,
-  isChildQuestion = false 
+  isChildQuestion = false,
+  questionMode = "standard" // Default to standard mode
 }: QuestionBasicInfoProps) {
   return (
     <div className="space-y-4">
@@ -45,8 +47,8 @@ export default function QuestionBasicInfo({
           )}
         />
 
-        {/* Parent Question ID - Only show if not in child question mode */}
-        {!isChildQuestion && (
+        {/* Parent Question ID - Only show in parent-child mode */}
+        {questionMode === "parent-child" && !isChildQuestion && (
           <Controller
             control={form.control}
             name="parentId"
@@ -79,8 +81,8 @@ export default function QuestionBasicInfo({
           />
         )}
 
-        {/* Has Child - Only show if not in child question mode */}
-        {!isChildQuestion && (
+        {/* Has Child - Only show in parent-child mode */}
+        {questionMode === "parent-child" && !isChildQuestion && (
           <Controller
             control={form.control}
             name="hasChild"
